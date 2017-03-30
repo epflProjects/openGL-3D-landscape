@@ -7,12 +7,10 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "cube/cube.h"
 #include "grid/grid.h"
 
 #include "trackball.h"
 
-Cube cube;
 Grid grid;
 
 int window_width = 800;
@@ -98,7 +96,6 @@ void Init() {
     // sets background color
     glClearColor(0.937, 0.937, 0.937 /*gray*/, 1.0 /*solid*/);
 
-    cube.Init();
     grid.Init();
 
     // enable depth test.
@@ -134,8 +131,6 @@ void Display() {
     cube_transf = rotate(cube_transf, 2.0f * time, vec3(0.0f, 1.0f, 0.0f));
 
     mat4 cube_model_matrix = cube_transf * cube_scale;
-
-    cube.Draw(trackball_matrix * cube_model_matrix, view_matrix, projection_matrix);
 
     // draw a quad on the ground.
     grid.Draw(time, trackball_matrix * quad_model_matrix, view_matrix, projection_matrix);
@@ -285,7 +280,6 @@ int main(int argc, char *argv[]) {
     }
 
     grid.Cleanup();
-    cube.Cleanup();
 
     // close OpenGL window and terminate GLFW
     glfwDestroyWindow(window);
