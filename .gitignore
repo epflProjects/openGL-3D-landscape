@@ -61,16 +61,8 @@ CMakeLists.txt.user*
 /Homework4/build/CMakeCache.txt
 *.cmake
 
-#executables
-Homework2/build/hw2_trackball/hw2_trackball
-Homework3/build/hw3_shading/hw3_shading
-
-#build folder
-Homework1/build/*
-Homework2/build/*
-Homework3/build/*
-
 #Others
+/build
 *.bin
 *.make
 *.swp
