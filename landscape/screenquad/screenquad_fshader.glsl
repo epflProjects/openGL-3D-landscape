@@ -6,19 +6,10 @@ out vec3 color;
 
 uniform int pass;
 
-uniform sampler2D tex;
+uniform sampler2D heightmap_tex;
 uniform float tex_width;
 uniform float tex_height;
 
 void main() {
-    switch(pass){
-        case 0:
-            oneDimBlur(false);
-            break;
-        case 1:
-            oneDimBlur(true);
-            break;
-        default:
-            break;
-    }
+  
 }

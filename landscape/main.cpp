@@ -9,9 +9,19 @@
 
 #include "grid/grid.h"
 
+#include "quad/quad.h"
+
 #include "trackball.h"
 
-Grid grid;
+#include "screenquad/screenquad.h"
+
+#include "framebuffer.h"
+
+Quad quad;
+ScreenQuad screenquad;
+FrameBuffer framebuffer;
+
+GLuint framebuffer_texture_id;
 
 int window_width = 800;
 int window_height = 600;
@@ -96,7 +106,7 @@ void Init() {
     // sets background color
     glClearColor(0.937, 0.937, 0.937 /*gray*/, 1.0 /*solid*/);
 
-    grid.Init();
+    quad.Init();
 
     // enable depth test.
     glEnable(GL_DEPTH_TEST);
@@ -118,11 +128,21 @@ void Init() {
                       0.0f,  0.0f,  0.25f, 0.0f,
                       0.0f,  0.0f,  0.0f,  1.0f);
     quad_model_matrix = translate(mat4(1.0f), vec3(0.0f, -0.25f, 0.0f));
+
+    framebuffer_texture_id = framebuffer.Init(window_width, window_height);
+    screenquad.Init(window_width, window_height, framebuffer_texture_id);
 }
 
 // gets called for every frame.
 void Display() {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    framebuffer.Bind();
+    {
+      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+      quad.Draw(IDENTITY_MATRIX, view_matrix, projection_matrix); //TODO better quad than grid??
+      screenquad.Draw(); // TODO put here for the moment
+    }
+    framebuffer.Unbind();
+    /*glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     const float time = glfwGetTime();
 
@@ -133,7 +153,7 @@ void Display() {
     mat4 cube_model_matrix = cube_transf * cube_scale;
 
     // draw a quad on the ground.
-    grid.Draw(time, trackball_matrix * quad_model_matrix, view_matrix, projection_matrix);
+    grid.Draw(time, trackball_matrix * quad_model_matrix, view_matrix, projection_matrix);*/
 }
 
 // transforms glfw screen coordinates into normalized OpenGL coordinates.
@@ -279,7 +299,9 @@ int main(int argc, char *argv[]) {
         glfwPollEvents();
     }
 
-    grid.Cleanup();
+    quad.Cleanup();
+    framebuffer.Cleanup();
+    screenquad.Cleanup();
 
     // close OpenGL window and terminate GLFW
     glfwDestroyWindow(window);
