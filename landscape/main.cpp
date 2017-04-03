@@ -23,10 +23,6 @@ using namespace glm;
 
 mat4 projection_matrix;
 mat4 view_matrix;
-mat4 cube_model_matrix;
-mat4 trackball_matrix;
-
-GLuint framebuffer_texture_id;
 
 void Init(GLFWwindow* window) {
     glClearColor(1.0, 1.0, 1.0 /*white*/, 1.0 /*solid*/);
@@ -42,22 +38,19 @@ void Init(GLFWwindow* window) {
     float ratio = window_width / (float) window_height;
     projection_matrix = perspective(45.0f, ratio, 0.1f, 10.0f);
 
-    trackball_matrix = IDENTITY_MATRIX;
-
     // on retina/hidpi displays, pixels != screen coordinates
     // this unsures that the framebuffer has the same size as the window
     // (see http://www.glfw.org/docs/latest/window.html#window_fbsize)
     glfwGetFramebufferSize(window, &window_width, &window_height);
-    framebuffer_texture_id = framebuffer.Init(window_width, window_height);
+    GLuint framebuffer_texture_id = framebuffer.Init(window_width, window_height);
     screenquad.Init(window_width, window_height, framebuffer_texture_id);
 }
 
 void Display() {
-    // render to the first framebuffer the cube and the floor/quad
+    // render to framebuffer
     framebuffer.Bind();
     {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        // draw a quad on the ground
         quad.Draw(IDENTITY_MATRIX, view_matrix, projection_matrix);
     }
     framebuffer.Unbind();

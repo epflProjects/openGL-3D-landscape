@@ -12,8 +12,6 @@ class ScreenQuad {
         float screenquad_width_;
         float screenquad_height_;
 
-        int permutation_[256];
-
     public:
         void Init(float screenquad_width, float screenquad_height,
                   GLuint texture) {
@@ -22,21 +20,9 @@ class ScreenQuad {
             this->screenquad_width_ = screenquad_width;
             this->screenquad_height_ = screenquad_height;
 
-            // set perumutation Table
-            for (size_t i = 0; i < (sizeof(permutation_)/sizeof(int)); i++) {
-              permutation_[i] = i;
-            }
-
-            shuffle(permutation_, sizeof(permutation_)/sizeof(int));
-            // TODO for-loop to test the correct output of permutation
-            // for (size_t i=0; i<10; i++){
-            //     printf("%d \n", permutation_[i]);
-            // }
-
             // compile the shaders
             program_id_ = icg_helper::LoadShaders("screenquad_vshader.glsl",
                                                   "screenquad_fshader.glsl");
-
             if(!program_id_) {
                 exit(EXIT_FAILURE);
             }
@@ -134,19 +120,4 @@ class ScreenQuad {
             glBindVertexArray(0);
             glUseProgram(0);
         }
-
-        // source: http://stackoverflow.com/questions/20734774/random-array-generation-with-no-duplicates
-        void shuffle(int *arr, size_t n) {
-          if (n > 1) {
-            size_t i;
-            srand(time(NULL));
-            for (i = 0; i < n - 1; i++) {
-              size_t j = i + rand() / (RAND_MAX / (n - i) + 1);
-              int t = arr[j];
-              arr[j] = arr[i];
-              arr[i] = t;
-            }
-          }
-        }
-
 };
