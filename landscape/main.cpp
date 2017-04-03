@@ -8,9 +8,11 @@
 
 #include "framebuffer.h"
 
+#include "cube/cube.h"
 #include "quad/quad.h"
 #include "screenquad/screenquad.h"
 
+Cube cube;
 Quad quad;
 
 int window_width = 800;
@@ -28,6 +30,7 @@ void Init(GLFWwindow* window) {
     glClearColor(1.0, 1.0, 1.0 /*white*/, 1.0 /*solid*/);
     glEnable(GL_DEPTH_TEST);
 
+    cube.Init();
     quad.Init();
 
     // setup view and projection matrices
@@ -145,6 +148,7 @@ int main(int argc, char *argv[]) {
 
     // cleanup
     quad.Cleanup();
+    cube.Cleanup();
     framebuffer.Cleanup();
     screenquad.Cleanup();
 
