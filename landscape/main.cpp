@@ -8,9 +8,11 @@
 
 #include "framebuffer.h"
 
+#include "cube/cube.h"
 #include "quad/quad.h"
 #include "screenquad/screenquad.h"
 
+Cube cube;
 Quad quad;
 
 int window_width = 800;
@@ -24,14 +26,12 @@ using namespace glm;
 mat4 projection_matrix;
 mat4 view_matrix;
 mat4 cube_model_matrix;
-mat4 trackball_matrix;
-
-GLuint framebuffer_texture_id;
 
 void Init(GLFWwindow* window) {
     glClearColor(1.0, 1.0, 1.0 /*white*/, 1.0 /*solid*/);
     glEnable(GL_DEPTH_TEST);
 
+    cube.Init();
     quad.Init();
 
     // setup view and projection matrices
@@ -42,22 +42,25 @@ void Init(GLFWwindow* window) {
     float ratio = window_width / (float) window_height;
     projection_matrix = perspective(45.0f, ratio, 0.1f, 10.0f);
 
-    trackball_matrix = IDENTITY_MATRIX;
+    // create the model matrix (remember OpenGL is right handed)
+    // accumulated transformation
+    cube_model_matrix = scale(IDENTITY_MATRIX, vec3(0.5));
+    cube_model_matrix = translate(cube_model_matrix, vec3(0.0, 0.0, 0.6));
 
     // on retina/hidpi displays, pixels != screen coordinates
     // this unsures that the framebuffer has the same size as the window
     // (see http://www.glfw.org/docs/latest/window.html#window_fbsize)
     glfwGetFramebufferSize(window, &window_width, &window_height);
-    framebuffer_texture_id = framebuffer.Init(window_width, window_height);
+    GLuint framebuffer_texture_id = framebuffer.Init(window_width, window_height);
     screenquad.Init(window_width, window_height, framebuffer_texture_id);
 }
 
 void Display() {
-    // render to the first framebuffer the cube and the floor/quad
+    // render to framebuffer
     framebuffer.Bind();
     {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        // draw a quad on the ground
+        cube.Draw(cube_model_matrix, view_matrix, projection_matrix);
         quad.Draw(IDENTITY_MATRIX, view_matrix, projection_matrix);
     }
     framebuffer.Unbind();
@@ -152,6 +155,7 @@ int main(int argc, char *argv[]) {
 
     // cleanup
     quad.Cleanup();
+    cube.Cleanup();
     framebuffer.Cleanup();
     screenquad.Cleanup();
 

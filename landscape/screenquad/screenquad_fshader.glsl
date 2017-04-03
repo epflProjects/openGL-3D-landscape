@@ -11,5 +11,5 @@ uniform float tex_width;
 uniform float tex_height;
 
 void main() {
-  
+    color = texture(heightmap_tex,uv).rgb;
 }

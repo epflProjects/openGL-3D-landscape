@@ -15,7 +15,6 @@ class Quad {
             // compile the shaders
             program_id_ = icg_helper::LoadShaders("quad_vshader.glsl",
                                                   "quad_fshader.glsl");
-
             if(!program_id_) {
                 exit(EXIT_FAILURE);
             }
