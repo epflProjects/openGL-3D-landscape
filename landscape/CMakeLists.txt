@@ -5,7 +5,8 @@ file(GLOB_RECURSE HEADERS "*.h")
 
 # these files are copied only once
 file(GLOB TEXTURES
-    grid/grid_texture.tga)
+    grid/grid_texture.tga
+    quad/quad_texture.tga)
 copy_files_once(${TEXTURES})
 
 # list all the files you want to copy everytime
@@ -14,7 +15,11 @@ file(GLOB SHADERS
   cube/cube_vshader.glsl
   cube/cube_fshader.glsl
   grid/grid_vshader.glsl
-  grid/grid_fshader.glsl)
+  grid/grid_fshader.glsl
+  quad/quad_vshader.glsl
+  quad/quad_fshader.glsl
+  screenquad/screenquad_vshader.glsl
+  screenquad/screenquad_fshader.glsl)
 deploy_shaders_to_build_dir(${SHADERS})
 
 add_executable(${EXERCISENAME} ${SOURCES} ${HEADERS} ${SHADERS})
