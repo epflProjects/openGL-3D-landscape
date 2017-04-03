@@ -5,7 +5,6 @@ file(GLOB_RECURSE HEADERS "*.h")
 
 # these files are copied only once
 file(GLOB TEXTURES
-    grid/grid_texture.tga
     quad/quad_texture.tga)
 copy_files_once(${TEXTURES})
 

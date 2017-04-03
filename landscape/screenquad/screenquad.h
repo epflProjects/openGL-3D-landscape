@@ -29,9 +29,9 @@ class ScreenQuad {
 
             shuffle(permutation_, sizeof(permutation_)/sizeof(int));
             // TODO for-loop to test the correct output of permutation
-            for (size_t i=0; i<10; i++){
-                printf("%d \n", permutation_[i]);
-            }
+            // for (size_t i=0; i<10; i++){
+            //     printf("%d \n", permutation_[i]);
+            // }
 
             // compile the shaders
             program_id_ = icg_helper::LoadShaders("screenquad_vshader.glsl",
