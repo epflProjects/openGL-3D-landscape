@@ -32,7 +32,7 @@ mat4 old_trackball_matrix;
 float last_y;
 
 void Init(GLFWwindow* window) {
-    glClearColor(1.0, 1.0, 1.0 /*white*/, 1.0 /*solid*/);
+    glClearColor(0.0, 0.0, 0.0 /*black*/, 1.0 /*solid*/);
     glEnable(GL_DEPTH_TEST);
 
     quad.Init();
