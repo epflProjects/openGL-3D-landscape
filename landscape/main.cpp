@@ -8,10 +8,12 @@
 
 #include "framebuffer.h"
 
+#include "grid/grid.h"
 #include "quad/quad.h"
 #include "screenquad/screenquad.h"
 #include "trackball.h"
 
+Grid grid;
 Quad quad;
 Trackball trackball;
 
@@ -34,6 +36,7 @@ void Init(GLFWwindow* window) {
     glEnable(GL_DEPTH_TEST);
 
     quad.Init();
+    grid.Init();
 
     // setup view and projection matrices
     vec3 cam_pos(2.0f, 2.0f, 2.0f);
@@ -60,7 +63,9 @@ void Display() {
     framebuffer.Bind();
     {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        quad.Draw(trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
+        //quad.Draw(trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
+        const float time = glfwGetTime();
+        grid.Draw(time, trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
     }
     framebuffer.Unbind();
 
@@ -198,6 +203,7 @@ int main(int argc, char *argv[]) {
     }
 
     // cleanup
+    grid.Cleanup();
     quad.Cleanup();
     framebuffer.Cleanup();
     screenquad.Cleanup();
