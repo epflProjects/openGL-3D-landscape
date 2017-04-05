@@ -56,9 +56,9 @@ float grad(int hash, float x, float y, float z) {
 }
 
 float noise(float x, float y, float z) {
-    int X = floor(x) & 255;
-    int Y = floor(y) & 255;
-    int Z = floor(z) & 255;
+    int X = floatBitsToInt(floor(x)) & 255;
+    int Y = floatBitsToInt(floor(y)) & 255;
+    int Z = floatBitsToInt(floor(z)) & 255;
     x -= floor(x);
     y -= floor(y);
     z -= floor(z);
@@ -85,5 +85,5 @@ float noise(float x, float y, float z) {
 }
 
 void main() {
-    color = texture(heightmap_tex,uv).rgb;
+    color = vec3(noise(uv.x, uv.y, 0)); // TODO not sure of the zero for z
 }
