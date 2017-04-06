@@ -55,6 +55,7 @@ void Init(GLFWwindow* window) {
     glfwGetFramebufferSize(window, &window_width, &window_height);
     GLuint framebuffer_texture_id = framebuffer.Init(window_width, window_height);
     screenquad.Init(window_width, window_height, framebuffer_texture_id);
+    screenquad.fBmExponentPrecompAndSet(0.9, 2.0);
 }
 
 // gets called for every frame.

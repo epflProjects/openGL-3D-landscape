@@ -1,6 +1,8 @@
 #pragma once
 #include "icg_helper.h"
 
+#define MAX_OCTAVES 10
+
 class ScreenQuad {
 
     private:
@@ -12,6 +14,11 @@ class ScreenQuad {
 
         float screenquad_width_;
         float screenquad_height_;
+
+        //variables relative of fractional brownian motion realised on the frag shader.
+        float fBm_H_;
+        float fBm_lacunarity_;
+        float fBm_exponent_array_[MAX_OCTAVES];
 
         //int permutation_[256];
         int p_[512];
@@ -155,6 +162,37 @@ class ScreenQuad {
             glBindTexture(GL_TEXTURE_1D, 0);
 
             // to avoid the current object being polluted
+            glBindVertexArray(0);
+            glUseProgram(0);
+        }
+
+        /**
+        * Precomputes the exponent array used in the fractal brownian motion
+        * computation on the frag shader. And then set those values for the shader.
+        * Should be called only once.
+        *
+        * @param H : represent 1 minus the fractal incrment.
+        *            Makes the fBm smoother if close to 1, rough if close to 0
+        * @param lacunarity : 
+        *
+        */
+        void fBmExponentPrecompAndSet(float H, float lacunarity){
+            float frequency = 1.0f;
+            for(int i = 0; i < MAX_OCTAVES; ++i){
+                fBm_exponent_array_[i] = pow(frequency, -H);
+                frequency *= lacunarity;
+            }
+            fBm_H_ = H;
+            fBm_lacunarity_ = lacunarity;
+
+            glUseProgram(program_id_);
+            glBindVertexArray(vertex_array_id_);
+            glUniform1f(glGetUniformLocation(program_id_, "lacunarity"),
+                        this->fBm_lacunarity_);
+            glUniform1f(glGetUniformLocation(program_id_, "H"),
+                        this->fBm_H_);
+            glUniform1fv(glGetUniformLocation(program_id_, "exponent_array"), 
+                        MAX_OCTAVES, this->fBm_exponent_array_);
             glBindVertexArray(0);
             glUseProgram(0);
         }

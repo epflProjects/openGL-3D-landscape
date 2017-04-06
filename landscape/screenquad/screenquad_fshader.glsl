@@ -8,6 +8,9 @@ out vec3 color;
 uniform sampler1D permutation_tex;
 uniform float tex_width;
 uniform float tex_height;
+uniform float H;
+uniform float lacunarity;
+uniform float exponent_array[10]; 
 
 // Version from: http://http.developer.nvidia.com/GPUGems2/gpugems2_chapter26.html
 // vec3 g[16] = vec3[](vec3(1,1,0), vec3(-1,1,0), vec3(1,-1,0), vec3(-1,-1,0),
@@ -139,26 +142,11 @@ float noise(float x, float y, float z) {
                                      grad(int(p[BB+1]), x-1, y-1, z-1 ))));
 }
 
-#define MAX_OCTAVES 8
-
-//TODO : for optimization, the first precomputation should probably happen on the CPU and then give the exponent_array as an uniform variable
-bool first = true;
-float[] exponent_array = float[](0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
-
-float fBm (vec3 point, float H, float lacunarity, float octaves){
-    float value, frequency, remainder;
+//Do the fractinal brownian motion. 
+//Need to have exponent_array initialized according to frequency and lacunarity. (done on CPU now)
+float fBm (vec3 point, float octaves){
+    float value = 0.0f;
     int i;
-    if(first){
-        frequency = 1.0f;
-        for(i = 0; i<MAX_OCTAVES; ++i){
-            exponent_array[i] = pow(frequency, -H);
-            frequency *= lacunarity;
-        }
-        first = false;
-    }
-
-    value = 0.0f;
-
     for(i = 0; i < octaves; ++i){
         value += noise(point.x, point.y, point.z) * exponent_array[i];
         point.x *= lacunarity;
@@ -166,7 +154,7 @@ float fBm (vec3 point, float H, float lacunarity, float octaves){
         point.z *= lacunarity;
     }
 
-    remainder = octaves - int(octaves);
+    float remainder = octaves - int(octaves);
     if(remainder == 0.0){
         value += remainder * noise(point.x, point.y, point.z) * exponent_array[i];
     }
@@ -176,7 +164,7 @@ float fBm (vec3 point, float H, float lacunarity, float octaves){
 void main() {
     //color = texture(heightmap_tex,uv).rgb;
      //color = vec3(noise(uv.x*10, uv.y*10, 0)); // TODO not sure of the zero for z
-     //9 because log(1080) - 2  = 9 (about or so)
-    color = vec3(fBm(vec3(uv.x*10, uv.y*10, 0), 0.9, 2.0, 8)); //TODO : same as above, not sure of the zero for z
+    float octaves = log(tex_height)/log(2) - 2;
+    color = vec3(fBm(vec3(uv.x*10, uv.y*10, 0), octaves)); //TODO : same as above, not sure of the zero for z
     //color = vec3(grad(3,uv.x, uv.y, 0));
 }
