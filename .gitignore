@@ -59,7 +59,7 @@ CMakeLists.txt.user*
 /Homework2/build/CMakeCache.txt
 /Homework3/build/CMakeCache.txt
 /Homework4/build/CMakeCache.txt
-*.cmake
+#*.cmake
 
 #Others
 /build
