@@ -60,14 +60,14 @@ void Init(GLFWwindow* window) {
 // gets called for every frame.
 void Display() {
     // render to framebuffer
-    // framebuffer.Bind();
-    // {
-    //     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    //     //quad.Draw(trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
-    //     const float time = glfwGetTime();
-    //     grid.Draw(time, trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
-    // }
-    // framebuffer.Unbind();
+    framebuffer.Bind();
+    {
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        //quad.Draw(trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
+        const float time = glfwGetTime();
+        grid.Draw(time, trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
+    }
+    framebuffer.Unbind();
     //
     // // render to Window
      glViewport(0, 0, window_width, window_height);

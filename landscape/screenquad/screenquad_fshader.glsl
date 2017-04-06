@@ -141,6 +141,6 @@ float noise(float x, float y, float z) {
 
 void main() {
     //color = texture(heightmap_tex,uv).rgb;
-     color = vec3(noise(uv.x*10, uv.y*10, 0)); // TODO not sure of the zero for z
+     color = vec3(noise(uv.x*15, uv.y*15, 0)); // TODO not sure of the zero for z
     //color = vec3(grad(3,uv.x, uv.y, 0));
 }
