@@ -13,7 +13,7 @@
 #include "screenquad/screenquad.h"
 #include "trackball.h"
 
-Grid grid;
+Grid terrain;
 Quad quad;
 Trackball trackball;
 
@@ -36,7 +36,7 @@ void Init(GLFWwindow* window) {
     glEnable(GL_DEPTH_TEST);
 
     quad.Init();
-    grid.Init();
+    terrain.Init();
 
     // setup view and projection matrices
     vec3 cam_pos(2.0f, 2.0f, 2.0f);
@@ -56,24 +56,27 @@ void Init(GLFWwindow* window) {
     GLuint framebuffer_texture_id = framebuffer.Init(window_width, window_height);
     screenquad.Init(window_width, window_height, framebuffer_texture_id);
     screenquad.fBmExponentPrecompAndSet(0.9, 2.0);
-}
 
-// gets called for every frame.
-void Display() {
     // render to framebuffer
     framebuffer.Bind();
     {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         //quad.Draw(trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
-        const float time = glfwGetTime();
-        grid.Draw(time, trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
+
+        screenquad.Draw();
     }
     framebuffer.Unbind();
-    //
-    // // render to Window
+
+}
+
+// gets called for every frame.
+void Display() {
+    // render to Window
      glViewport(0, 0, window_width, window_height);
      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    screenquad.Draw();
+     const float time = glfwGetTime();
+     terrain.Draw(time, trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
+     //screenquad.Draw();
 }
 
 // gets called when the windows/framebuffer is resized.
@@ -204,7 +207,7 @@ int main(int argc, char *argv[]) {
     }
 
     // cleanup
-    grid.Cleanup();
+    terrain.Cleanup();
     quad.Cleanup();
     framebuffer.Cleanup();
     screenquad.Cleanup();

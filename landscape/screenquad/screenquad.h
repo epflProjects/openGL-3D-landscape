@@ -20,8 +20,8 @@ class ScreenQuad {
         float fBm_lacunarity_;
         float fBm_exponent_array_[MAX_OCTAVES];
 
-        //int permutation_[256];
-        int p_[512];
+        int permutation_[256];
+        //int p_[512];
 
         // source: http://stackoverflow.com/questions/20734774/random-array-generation-with-no-duplicates
         void shuffle(int *arr, size_t n) {
@@ -37,6 +37,35 @@ class ScreenQuad {
           }
         }
 
+
+        GLuint gen_permutation_table() {
+            /// Pseudo-randomly generate the permutation table.
+            const int size(256);
+            GLfloat permutationTable[size];
+            for(int k=0; k<size; ++k)
+                permutationTable[k] = k;
+
+            /// Seed the pseudo-random generator for reproductability.
+            std::srand(10);
+
+            /// Fisher-Yates / Knuth shuffle.
+            for(int k=size-1; k>0; --k) {
+                GLuint idx = int(float(k) * std::rand() / RAND_MAX);
+                GLfloat tmp = permutationTable[k];
+                permutationTable[k] = permutationTable[idx];
+                permutationTable[idx] = tmp;
+            }
+
+            /// Create the texture.
+            GLuint permTableTexID;
+            glGenTextures(1, &permTableTexID);
+            glBindTexture(GL_TEXTURE_1D, permTableTexID);
+            glTexImage1D(GL_TEXTURE_1D, 0, GL_R32F, size, 0, GL_RED, GL_FLOAT, permutationTable);
+            glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+            return permTableTexID;
+        }
+
     public:
         void Init(float screenquad_width, float screenquad_height,
                   GLuint texture) {
@@ -45,56 +74,32 @@ class ScreenQuad {
             this->screenquad_width_ = screenquad_width;
             this->screenquad_height_ = screenquad_height;
 
-            //set perumutation table
-            int permutation_ [256];
-            for (int i = 0; i < 256; i++) {
-              permutation_[i] = (float)i;
-            }
+            this->permutation_texture_id_ = gen_permutation_table();
 
-            shuffle(permutation_, sizeof(permutation_)/sizeof(int));
+            // load/Assign heightmap texture
+            glBindTexture(GL_TEXTURE_1D, permutation_texture_id_);
+            glActiveTexture(GL_TEXTURE0);
+            GLuint perm_id = glGetUniformLocation(program_id_, "permutation_tex");
+            glUniform1i(perm_id, 0 /*GL_TEXTURE2*/);
+            glBindTexture(GL_TEXTURE_1D, GL_TEXTURE0);
 
-  //           int permutation_ [] = { 151,160,137,91,90,15,
-  //  131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,8,99,37,240,21,10,23,
-  //  190, 6,148,247,120,234,75,0,26,197,62,94,252,219,203,117,35,11,32,57,177,33,
-  //  88,237,149,56,87,174,20,125,136,171,168, 68,175,74,165,71,134,139,48,27,166,
-  //  77,146,158,231,83,111,229,122,60,211,133,230,220,105,92,41,55,46,245,40,244,
-  //  102,143,54, 65,25,63,161, 1,216,80,73,209,76,132,187,208, 89,18,169,200,196,
-  //  135,130,116,188,159,86,164,100,109,198,173,186, 3,64,52,217,226,250,124,123,
-  //  5,202,38,147,118,126,255,82,85,212,207,206,59,227,47,16,58,17,182,189,28,42,
-  //  223,183,170,213,119,248,152, 2,44,154,163, 70,221,153,101,155,167, 43,172,9,
-  //  129,22,39,253, 19,98,108,110,79,113,224,232,178,185, 112,104,218,246,97,228,
-  //  251,34,242,193,238,210,144,12,191,179,162,241, 81,51,145,235,249,14,239,107,
-  //  49,192,214, 31,181,199,106,157,184, 84,204,176,115,121,50,45,127, 4,150,254,
-  //  138,236,205,93,222,114,67,29,24,72,243,141,128,195,78,66,215,61,156,180
-  //  };
+            //set permutation table
+            // for (int i = 0; i < 256; i++) {
+            //   this->permutation_[i] = (float)i;
+            // }
+            //
+            // shuffle(this->permutation_, sizeof(this->permutation_)/sizeof(int));
 
-            for (int i=0; i < 256 ; i++) {
-                this->p_[i] = permutation_[i];
-                this->p_[256+i] = this->p_[i];
-              }
+            // for (int i=0; i < 256 ; i++) {
+            //     this->p_[i] = permutation_[i];
+            //     this->p_[256+i] = this->p_[i];
+            //   }
 
-            for (int i = 0; i < 256; i++) {
-              cout << permutation_[i] << endl;
-            }
-
-            // put the p array in texture
-            {
-                glGenTextures(1, &permutation_texture_id_);
-                glBindTexture(GL_TEXTURE_1D, permutation_texture_id_);
-                glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-                glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-                // create texture for the color attachment
-                // see Table.2 on
-                // khronos.org/opengles/sdk/docs/man3/docbook4/xhtml/glTexImage2D.xml
-                glTexImage1D(GL_TEXTURE_1D, 0, GL_R32F, screenquad_width_, screenquad_height_,
-                             GL_RED, GL_UNSIGNED_INT, this->p_);
-                // how to load from buffer
-
-            }
+            // Create the texture.
+            //  glGenTextures(1, &permutation_texture_id_);
+            //  glBindTexture(GL_TEXTURE_1D, permutation_texture_id_);
+            //  glTexImage1D(GL_TEXTURE_1D, 0, GL_R32F, sizeof(this->permutation_)/sizeof(int), 0, GL_RED, GL_FLOAT, this->permutation_);
+            //  glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
             // compile the shaders
             program_id_ = icg_helper::LoadShaders("screenquad_vshader.glsl",
@@ -156,10 +161,16 @@ class ScreenQuad {
             // GLuint tex_id = glGetUniformLocation(program_id_, "heightmap_tex");
             // glUniform1i(tex_id, 0 /*GL_TEXTURE0*/);
             // glBindTexture(GL_TEXTURE_2D, 0);
-            glBindTexture(GL_TEXTURE_1D, permutation_texture_id_);
-            GLuint tex_id = glGetUniformLocation(program_id_, "permutation_tex");
-            glUniform1i(tex_id, 0 /*GL_TEXTURE0*/);
-            glBindTexture(GL_TEXTURE_1D, 0);
+            // glBindTexture(GL_TEXTURE_1D, permutation_texture_id_);
+            // GLuint tex_id = glGetUniformLocation(program_id_, "permutation_tex");
+            // glUniform1i(tex_id, 0 /*GL_TEXTURE0*/);
+            // glBindTexture(GL_TEXTURE_1D, 0);
+            // load/Assign heightmap texture
+            // glBindTexture(GL_TEXTURE_1D, permutation_texture_id_);
+            // glActiveTexture(GL_TEXTURE0);
+            // GLuint perm_id = glGetUniformLocation(program_id_, "permutation_tex");
+            // glUniform1i(perm_id, 0 /*GL_TEXTURE2*/);
+            // glBindTexture(GL_TEXTURE_1D, GL_TEXTURE0);
 
             // to avoid the current object being polluted
             glBindVertexArray(0);
@@ -173,7 +184,7 @@ class ScreenQuad {
         *
         * @param H : represent 1 minus the fractal incrment.
         *            Makes the fBm smoother if close to 1, rough if close to 0
-        * @param lacunarity : 
+        * @param lacunarity :
         *
         */
         void fBmExponentPrecompAndSet(float H, float lacunarity){
@@ -191,7 +202,7 @@ class ScreenQuad {
                         this->fBm_lacunarity_);
             glUniform1f(glGetUniformLocation(program_id_, "H"),
                         this->fBm_H_);
-            glUniform1fv(glGetUniformLocation(program_id_, "exponent_array"), 
+            glUniform1fv(glGetUniformLocation(program_id_, "exponent_array"),
                         MAX_OCTAVES, this->fBm_exponent_array_);
             glBindVertexArray(0);
             glUseProgram(0);
