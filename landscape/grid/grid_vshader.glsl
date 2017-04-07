@@ -13,9 +13,9 @@ void main() {
     uv = (position + vec2(1.0, 1.0)) * 0.5;
     // convert the 2D position into 3D positions that all lay in a horizontal
     // plane.
-    float newX = position.x;
-    float newY = position.y;
-    float height = texture(heightmap_tex, vec2(newX, newY)).z; // TODO not sure
+    float newX = (position.x + 1) * 0.5;
+    float newY = (position.y + 1) * 0.5;
+    float height = (texture(heightmap_tex, vec2(newX, newY)).z)/20; // TODO not sure
 
     vpoint_mv = MVP * vec4(vec3(newX, newY, height), 1.0); // TODO not sure
 
