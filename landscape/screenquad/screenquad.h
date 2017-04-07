@@ -9,8 +9,6 @@ class ScreenQuad {
         GLuint vertex_array_id_;        // vertex array object
         GLuint program_id_;             // GLSL shader program ID
         GLuint vertex_buffer_object_;   // memory buffer
-        //GLuint texture_id_;             // texture ID
-        GLuint permutation_texture_id_;
 
         float screenquad_width_;
         float screenquad_height_;
@@ -20,36 +18,6 @@ class ScreenQuad {
         float fBm_lacunarity_;
         float fBm_exponent_array_[MAX_OCTAVES];
 
-        int permutation_[256];
-
-        GLuint gen_permutation_table() {
-            /// Pseudo-randomly generate the permutation table.
-            const int size(256);
-            GLfloat permutationTable[size];
-            for(int k=0; k<size; ++k)
-                permutationTable[k] = k;
-
-            /// Seed the pseudo-random generator for reproductability.
-            std::srand(10);
-
-            /// Fisher-Yates / Knuth shuffle.
-            for(int k=size-1; k>0; --k) {
-                GLuint idx = int(float(k) * std::rand() / RAND_MAX);
-                GLfloat tmp = permutationTable[k];
-                permutationTable[k] = permutationTable[idx];
-                permutationTable[idx] = tmp;
-            }
-
-            /// Create the texture.
-            GLuint permTableTexID;
-            glGenTextures(1, &permTableTexID);
-            glBindTexture(GL_TEXTURE_1D, permTableTexID);
-            glTexImage1D(GL_TEXTURE_1D, 0, GL_R32F, size, 0, GL_RED, GL_FLOAT, permutationTable);
-            glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
-            return permTableTexID;
-        }
-
     public:
         void Init(float screenquad_width, float screenquad_height,
                   GLuint texture) {
@@ -57,15 +25,6 @@ class ScreenQuad {
             // set screenquad size
             this->screenquad_width_ = screenquad_width;
             this->screenquad_height_ = screenquad_height;
-
-            this->permutation_texture_id_ = gen_permutation_table();
-
-            // load/Assign heightmap texture
-            glBindTexture(GL_TEXTURE_1D, permutation_texture_id_);
-            glActiveTexture(GL_TEXTURE0);
-            GLuint perm_id = glGetUniformLocation(program_id_, "permutation_tex");
-            glUniform1i(perm_id, 0 /*GL_TEXTURE2*/);
-            glBindTexture(GL_TEXTURE_1D, GL_TEXTURE0);
 
             // compile the shaders
             program_id_ = icg_helper::LoadShaders("screenquad_vshader.glsl",
@@ -163,8 +122,6 @@ class ScreenQuad {
             glDeleteBuffers(1, &vertex_buffer_object_);
             glDeleteProgram(program_id_);
             glDeleteVertexArrays(1, &vertex_array_id_);
-            //glDeleteTextures(1, &texture_id_);
-            glDeleteTextures(1, &permutation_texture_id_);
         }
 
         void UpdateSize(int screenquad_width, int screenquad_height) {
@@ -181,11 +138,6 @@ class ScreenQuad {
                         this->screenquad_width_);
             glUniform1f(glGetUniformLocation(program_id_, "tex_height"),
                         this->screenquad_height_);
-
-            // bind texture
-            glActiveTexture(GL_TEXTURE0);
-            //glBindTexture(GL_TEXTURE_2D, texture_id_);
-            glBindTexture(GL_TEXTURE_1D, permutation_texture_id_);
 
             // draw
             glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);

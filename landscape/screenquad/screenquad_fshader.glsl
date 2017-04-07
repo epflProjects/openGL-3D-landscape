@@ -12,38 +12,9 @@ uniform float H;
 uniform float lacunarity;
 uniform float exponent_array[10];
 
-// Version from: http://http.developer.nvidia.com/GPUGems2/gpugems2_chapter26.html
-// vec3 g[16] = vec3[](vec3(1,1,0), vec3(-1,1,0), vec3(1,-1,0), vec3(-1,-1,0),
-//             vec3(1,0,1), vec3(-1,0,1), vec3(1,0,-1), vec3(-1,0,-1),
-//             vec3(0,1,1), vec3(0,-1,1), vec3(0,1,-1), vec3(0,-1,-1),
-//             vec3(1,1,0), vec3(0,-1,1), vec3(-1,1,0), vec3(0,-1,-1));
-//
-// vec3 generateGradTexture(int position) {
-//     return g[position * 16];
-// }
-//
-// vec4 generatePermTexture(int position) {
-//     return vec4(permutation[position * 256] / 255.0f, // TODO not sure
-//                 permutation[position * 256] / 255.0f,
-//                 permutation[position * 256] / 255.0f,
-//                 permutation[position * 256] / 255.0f);
-// }
-
-/*vec3 fade(vec3 t) {
-    return t * t * t * (t * (t * 6 - 15) + 10);
-}
-
-float perm(float x) {
-    return tex1D(permSampler, x / 256.0) * 256;
-}
-
-float grad(float x, vec3 p) {
-    return dot(tex1D(gradSampler, x), p);
-}
-
-*/
 // Version from: http://mrl.nyu.edu/~perlin/noise/
-int p[] = int[]( 151,160,137,91,90,15,
+
+int permutation[] = int[]( 151,160,137,91,90,15,
  131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,8,99,37,240,21,10,23,
  190, 6,148,247,120,234,75,0,26,197,62,94,252,219,203,117,35,11,32,57,177,33,
  88,237,149,56,87,174,20,125,136,171,168, 68,175,74,165,71,134,139,48,27,166,
@@ -58,18 +29,6 @@ int p[] = int[]( 151,160,137,91,90,15,
  138,236,205,93,222,114,67,29,24,72,243,141,128,195,78,66,215,61,156,180
  );
 
-// int p[256];
-// for (int i = 0; i < 256; i++) {
-//   p[i] = float(i);
-// }
-//
-// for (i = 0; i < 256 - 1; i++) {
-//   int j = i + rand() / (RAND_MAX / (256 - i) + 1);
-//   int t = arr[j];
-//   arr[j] = arr[i];
-//   arr[i] = t;
-// }
-
 float fade(float t) {
     return t * t * t * (t * (t * 6 - 15) + 10);
 }
@@ -83,33 +42,6 @@ float grad(int hash, float x, float y, float z) {
     float u = h<8 ? x : y;
     float v = h<4 ? y : h==12 || h==14 ? x : z;
     return ((h&1) == 0 ? u : -u) + ((h&2) == 0 ? v : -v);
-
-    // int h = hash & 15;
-    // float u = 0.0f;
-    // if (h < 8) {
-    //   u = x;
-    // } else {
-    //   u = y;
-    // }
-    //
-    // float v = 0.0f;
-    // if (h < 4) {
-    //   v = y;
-    // } else if (h==12 || h==14) {
-    //   v = x;
-    // } else {
-    //   v = z;
-    // }
-    //
-    // if ((h & 1) != 0) {
-    //   u = -u;
-    // }
-    //
-    // if ((h & 2) != 0) {
-    //   v = -v;
-    // }
-    //
-    // return u + v;
 }
 
 float noise(float x, float y, float z) {
@@ -125,21 +57,21 @@ float noise(float x, float y, float z) {
     float v = fade(y);
     float w = fade(z);
 
-    int A = p[X]+Y;////int(texture(permutation_tex, X))+Y;//permutation_tex[X]+Y;
-    int AA = p[A]+Z;////int(texture(permutation_tex, A))+Z;//permutation_tex[A]+Z;
-    int AB = p[A+1]+Z;////int(texture(permutation_tex, A+1))+Z;//permutation_tex[A+1]+Z;
-    int B = p[X+1]+Y;////int(texture(permutation_tex, X+1))+Y;//permutation_tex[X+1]+Y;
-    int BA = p[B]+Z;////int(texture(permutation_tex, B))+Z;//permutation_tex[B]+Z;
-    int BB = p[B+1]+Z;////int(texture(permutation_tex, B+1))+Z;//permutation_tex[B+1]+Z;
+    int A = permutation[X]+Y;
+    int AA = permutation[A]+Z;
+    int AB = permutation[A+1]+Z;
+    int B = permutation[X+1]+Y;
+    int BA = permutation[B]+Z;
+    int BB = permutation[B+1]+Z;
 
-    return lerp(w, lerp(v, lerp(u, grad(int(p[AA]), x  , y  , z   ),     // AND ADD
-                                     grad(int(p[BA]), x-1, y  , z   )),  // BLENDED
-                             lerp(u, grad(int(p[AB]), x  , y-1, z   ),   // RESULTS
-                                     grad(int(p[BB]), x-1, y-1, z   ))), // FROM  8
-                     lerp(v, lerp(u, grad(int(p[AA+1]), x  , y  , z-1 ),   // CORNERS
-                                     grad(int(p[BA+1]), x-1, y  , z-1 )),  // OF CUBE
-                             lerp(u, grad(int(p[AB+1]), x  , y-1, z-1 ),
-                                     grad(int(p[BB+1]), x-1, y-1, z-1 ))));
+    return lerp(w, lerp(v, lerp(u, grad(int(permutation[AA]), x  , y  , z   ),     // AND ADD
+                                     grad(int(permutation[BA]), x-1, y  , z   )),  // BLENDED
+                             lerp(u, grad(int(permutation[AB]), x  , y-1, z   ),   // RESULTS
+                                     grad(int(permutation[BB]), x-1, y-1, z   ))), // FROM  8
+                     lerp(v, lerp(u, grad(int(permutation[AA+1]), x  , y  , z-1 ),   // CORNERS
+                                     grad(int(permutation[BA+1]), x-1, y  , z-1 )),  // OF CUBE
+                             lerp(u, grad(int(permutation[AB+1]), x  , y-1, z-1 ),
+                                     grad(int(permutation[BB+1]), x-1, y-1, z-1 ))));
 }
 
 //Do the fractinal brownian motion.
@@ -162,9 +94,6 @@ float fBm (vec3 point, float octaves){
 }
 
 void main() {
-    //color = texture(heightmap_tex,uv).rgb;
-     //color = vec3(noise(uv.x*10, uv.y*10, 0)); // TODO not sure of the zero for z
     float octaves = log(tex_height)/log(2) - 2;
-    color = vec3(fBm(vec3(uv.x*10, uv.y*10, 0), octaves)); //TODO : same as above, not sure of the zero for z
-    //color = vec3(grad(3,uv.x, uv.y, 0));
+    color = vec3(fBm(vec3(uv.x*10, uv.y*10, 0), octaves));
 }
