@@ -32,9 +32,8 @@ class Grid {
             {
                 std::vector<GLfloat> vertices;
                 std::vector<GLuint> indices;
-                // make a triangle grid with dimension 100x100.
+                // make a triangle grid with dimension 512x512.
                 // always two subsequent entries in 'vertices' form a 2D vertex position.
-                // TODO note sure of the number -> need Matteo check
                 int grid_dim = 512;
 
                 // the given code below are the vertices for a simple quad.
@@ -52,7 +51,6 @@ class Grid {
                 }
 
                 // and indices.
-
                 indices.push_back(0);
                 indices.push_back(grid_dim);
                 size_t idx = 1;
@@ -104,42 +102,6 @@ class Grid {
             glUniform1i(heightmap_id, 0 /*GL_TEXTURE0*/);
             glBindTexture(GL_TEXTURE_2D, GL_TEXTURE0);
 
-            // load texture
-            // {
-            //     int width;
-            //     int height;
-            //     int nb_component;
-            //     string filename = "grid_texture.tga";
-            //     // set stb_image to have the same coordinates as OpenGL
-            //     stbi_set_flip_vertically_on_load(1);
-            //     unsigned char* image = stbi_load(filename.c_str(), &width,
-            //                                      &height, &nb_component, 0);
-            //
-            //     if(image == nullptr) {
-            //         throw(string("Failed to load texture"));
-            //     }
-            //
-            //     glGenTextures(1, &texture_id_);
-            //     glBindTexture(GL_TEXTURE_2D, texture_id_);
-            //     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            //     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            //
-            //     if(nb_component == 3) {
-            //         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0,
-            //                      GL_RGB, GL_UNSIGNED_BYTE, image);
-            //     } else if(nb_component == 4) {
-            //         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0,
-            //                      GL_RGBA, GL_UNSIGNED_BYTE, image);
-            //     }
-            //
-            //     GLuint tex_id = glGetUniformLocation(program_id_, "tex");
-            //     glUniform1i(tex_id, 0 /*GL_TEXTURE0*/);
-            //
-            //     // cleanup
-            //     glBindTexture(GL_TEXTURE_2D, 0);
-            //     stbi_image_free(image);
-            // }
-
             // other uniforms
             MVP_id_ = glGetUniformLocation(program_id_, "MVP");
 
@@ -155,7 +117,6 @@ class Grid {
             glDeleteBuffers(1, &vertex_buffer_object_index_);
             glDeleteVertexArrays(1, &vertex_array_id_);
             glDeleteProgram(program_id_);
-            glDeleteTextures(1, &texture_id_);
         }
 
         void Draw(float time, const glm::mat4 &model = IDENTITY_MATRIX,
@@ -163,10 +124,6 @@ class Grid {
                   const glm::mat4 &projection = IDENTITY_MATRIX) {
             glUseProgram(program_id_);
             glBindVertexArray(vertex_array_id_);
-
-            // bind textures
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, texture_id_);
 
             // setup MVP
             glm::mat4 MVP = projection*view*model;
@@ -176,11 +133,6 @@ class Grid {
             glUniform1f(glGetUniformLocation(program_id_, "time"), time);
 
             // draw
-            // TODO 5: for debugging it can be helpful to draw only the wireframe.
-            // You can do that by uncommenting the next line.
-            //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-            // TODO 5: depending on how you set up your vertex index buffer, you
-            // might have to change GL_TRIANGLE_STRIP to GL_TRIANGLES.
             glDrawElements(GL_TRIANGLE_STRIP, num_indices_, GL_UNSIGNED_INT, 0);
 
             glBindVertexArray(0);
