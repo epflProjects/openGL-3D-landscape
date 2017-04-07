@@ -36,7 +36,6 @@ void Init(GLFWwindow* window) {
     glEnable(GL_DEPTH_TEST);
 
     quad.Init();
-    terrain.Init();
 
     // setup view and projection matrices
     vec3 cam_pos(2.0f, 2.0f, 2.0f);
@@ -53,8 +52,9 @@ void Init(GLFWwindow* window) {
     // this unsures that the framebuffer has the same size as the window
     // (see http://www.glfw.org/docs/latest/window.html#window_fbsize)
     glfwGetFramebufferSize(window, &window_width, &window_height);
-    GLuint framebuffer_texture_id = framebuffer.Init(window_width, window_height);
-    screenquad.Init(window_width, window_height, framebuffer_texture_id);
+    GLuint heightmap_tex_id = framebuffer.Init(window_width, window_height);
+    terrain.Init(heightmap_tex_id);
+    screenquad.Init(window_width, window_height, heightmap_tex_id);
     screenquad.fBmExponentPrecompAndSet(0.9, 2.0);
 
     // render to framebuffer

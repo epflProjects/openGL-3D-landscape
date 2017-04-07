@@ -125,21 +125,12 @@ float noise(float x, float y, float z) {
     float v = fade(y);
     float w = fade(z);
 
-    int A = int(texture(permutation_tex, X).r)+Y;//p[X]+Y;//int(texture(permutation_tex, X))+Y;//permutation_tex[X]+Y;
-    int AA = int(texture(permutation_tex, A).r)+Z;//p[A]+Z;//int(texture(permutation_tex, A))+Z;//permutation_tex[A]+Z;
-    int AB = int(texture(permutation_tex, A+1).r)+Z;//p[A+1]+Z;//int(texture(permutation_tex, A+1))+Z;//permutation_tex[A+1]+Z;
-    int B = int(texture(permutation_tex, X+1).r)+Y;//p[X+1]+Y;//int(texture(permutation_tex, X+1))+Y;//permutation_tex[X+1]+Y;
-    int BA = int(texture(permutation_tex, B).r)+Z;//p[B]+Z;//int(texture(permutation_tex, B))+Z;//permutation_tex[B]+Z;
-    int BB = int(texture(permutation_tex, B+1).r)+Z;//p[B+1]+Z;//int(texture(permutation_tex, B+1))+Z;//permutation_tex[B+1]+Z;
-
-    return lerp(w, lerp(v, lerp(u, grad(int(texture(permutation_tex, AA).r), x, y, z),
-                                    grad(int(texture(permutation_tex, BA).r), x-1, y, z)),
-                           lerp(u, grad(int(texture(permutation_tex, AB).r), x, y-1, z),
-                                    grad(int(texture(permutation_tex, BB).r), x-1, y-1, z))),
-                    lerp(v, lerp(u, grad(int(texture(permutation_tex, AA+1).r), x, y, z-1),
-                                    grad(int(texture(permutation_tex, BA+1).r), x-1, y, z-1)),
-                            lerp(u, grad(int(texture(permutation_tex, AB+1).r), x, y-1, z-1),
-                                    grad(int(texture(permutation_tex, BB+1).r), x-1, y-1, z-1))));
+    int A = p[X]+Y;////int(texture(permutation_tex, X))+Y;//permutation_tex[X]+Y;
+    int AA = p[A]+Z;////int(texture(permutation_tex, A))+Z;//permutation_tex[A]+Z;
+    int AB = p[A+1]+Z;////int(texture(permutation_tex, A+1))+Z;//permutation_tex[A+1]+Z;
+    int B = p[X+1]+Y;////int(texture(permutation_tex, X+1))+Y;//permutation_tex[X+1]+Y;
+    int BA = p[B]+Z;////int(texture(permutation_tex, B))+Z;//permutation_tex[B]+Z;
+    int BB = p[B+1]+Z;////int(texture(permutation_tex, B+1))+Z;//permutation_tex[B+1]+Z;
 
     return lerp(w, lerp(v, lerp(u, grad(int(p[AA]), x  , y  , z   ),     // AND ADD
                                      grad(int(p[BA]), x-1, y  , z   )),  // BLENDED
@@ -172,8 +163,8 @@ float fBm (vec3 point, float octaves){
 
 void main() {
     //color = texture(heightmap_tex,uv).rgb;
-     color = vec3(noise(uv.x*10, uv.y*10, 0)); // TODO not sure of the zero for z
-    //float octaves = log(tex_height)/log(2) - 2;
-    //color = vec3(fBm(vec3(uv.x*10, uv.y*10, 0), octaves)); //TODO : same as above, not sure of the zero for z
+     //color = vec3(noise(uv.x*10, uv.y*10, 0)); // TODO not sure of the zero for z
+    float octaves = log(tex_height)/log(2) - 2;
+    color = vec3(fBm(vec3(uv.x*10, uv.y*10, 0), octaves)); //TODO : same as above, not sure of the zero for z
     //color = vec3(grad(3,uv.x, uv.y, 0));
 }

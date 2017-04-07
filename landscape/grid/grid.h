@@ -14,7 +14,7 @@ class Grid {
         GLuint MVP_id_;                         // model, view, proj matrix ID
 
     public:
-        void Init() {
+        void Init(GLuint heightmap_tex_id) {
             // compile the shaders.
             program_id_ = icg_helper::LoadShaders("grid_vshader.glsl",
                                                   "grid_fshader.glsl");
@@ -97,41 +97,48 @@ class Grid {
                                       ZERO_STRIDE, ZERO_BUFFER_OFFSET);
             }
 
+            // heightmap texture
+            this->texture_id_ = heightmap_tex_id;
+            glBindTexture(GL_TEXTURE_2D, this->texture_id_);
+            GLuint heightmap_id = glGetUniformLocation(program_id_, "heightmap_tex");
+            glUniform1i(heightmap_id, 0 /*GL_TEXTURE0*/);
+            glBindTexture(GL_TEXTURE_2D, GL_TEXTURE0);
+
             // load texture
-            {
-                int width;
-                int height;
-                int nb_component;
-                string filename = "grid_texture.tga";
-                // set stb_image to have the same coordinates as OpenGL
-                stbi_set_flip_vertically_on_load(1);
-                unsigned char* image = stbi_load(filename.c_str(), &width,
-                                                 &height, &nb_component, 0);
-
-                if(image == nullptr) {
-                    throw(string("Failed to load texture"));
-                }
-
-                glGenTextures(1, &texture_id_);
-                glBindTexture(GL_TEXTURE_2D, texture_id_);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-
-                if(nb_component == 3) {
-                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0,
-                                 GL_RGB, GL_UNSIGNED_BYTE, image);
-                } else if(nb_component == 4) {
-                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0,
-                                 GL_RGBA, GL_UNSIGNED_BYTE, image);
-                }
-
-                GLuint tex_id = glGetUniformLocation(program_id_, "tex");
-                glUniform1i(tex_id, 0 /*GL_TEXTURE0*/);
-
-                // cleanup
-                glBindTexture(GL_TEXTURE_2D, 0);
-                stbi_image_free(image);
-            }
+            // {
+            //     int width;
+            //     int height;
+            //     int nb_component;
+            //     string filename = "grid_texture.tga";
+            //     // set stb_image to have the same coordinates as OpenGL
+            //     stbi_set_flip_vertically_on_load(1);
+            //     unsigned char* image = stbi_load(filename.c_str(), &width,
+            //                                      &height, &nb_component, 0);
+            //
+            //     if(image == nullptr) {
+            //         throw(string("Failed to load texture"));
+            //     }
+            //
+            //     glGenTextures(1, &texture_id_);
+            //     glBindTexture(GL_TEXTURE_2D, texture_id_);
+            //     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            //     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            //
+            //     if(nb_component == 3) {
+            //         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0,
+            //                      GL_RGB, GL_UNSIGNED_BYTE, image);
+            //     } else if(nb_component == 4) {
+            //         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0,
+            //                      GL_RGBA, GL_UNSIGNED_BYTE, image);
+            //     }
+            //
+            //     GLuint tex_id = glGetUniformLocation(program_id_, "tex");
+            //     glUniform1i(tex_id, 0 /*GL_TEXTURE0*/);
+            //
+            //     // cleanup
+            //     glBindTexture(GL_TEXTURE_2D, 0);
+            //     stbi_image_free(image);
+            // }
 
             // other uniforms
             MVP_id_ = glGetUniformLocation(program_id_, "MVP");
