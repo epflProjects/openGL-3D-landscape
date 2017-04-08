@@ -32,32 +32,35 @@ vec3 colorGraduator(vec3 currColor, vec3 nextColor, float height, float prevHeig
 	return currColor + vec3(rGrad * percentage, gGrad * percentage, bGrad * percentage);
 }
 
+#define LAND_TYPES_NBR 6
+vec3 sea = vec3(0, 61, 218);
+vec3 coast = vec3(216, 204, 96);
+vec3 land = vec3(49, 160, 64);
+vec3 forest = vec3(44,86,99);
+vec3 mountain = vec3(142, 142, 142);
+vec3 noColor = vec3(0, 0, 0);
+
+vec3 landColors[LAND_TYPES_NBR] = vec3[](sea, coast, land, forest, noColor, mountain);
+float landLimits[LAND_TYPES_NBR - 1] = float[](0.0f, 0.01f, 0.03f, 0.045f, 0.055f);
+
+
 /**
  * According to the current height, return the correct color
  * of the field in HEX form.
  */
 vec3 heightColor(float height){
-	//TODO : calculate borns of height according to max/min value of height. (bc magic number is bad.)
-	vec3 sea = vec3(0, 61, 218);
-	vec3 coast = vec3(216, 204, 96);
-	vec3 land = vec3(49, 160, 64);
-	vec3 forest = vec3(44,86,99);
-	vec3 mountain = vec3(142, 142, 142);
-	vec3 noColor = vec3(0, 0, 0);
 
-	if(height <= 0.0f){
-		return sea;
-	}else if(height <= 0.01f){ 
-		return colorGraduator(coast, land, height, 0.0f, 0.01f);
-	}else if(height <= 0.03f){
-		return colorGraduator(land, forest, height, 0.01f, 0.03f);
-	}else if(height <= 0.045f){
-		return colorGraduator(forest, noColor, height, 0.03f, 0.045f);
-	}else if(height <= 0.055f){
-		return colorGraduator(noColor, mountain, height, 0.045f, 0.055f);
-	}else{
-		return mountain;
+	if(height <= landLimits[0]){
+		return landColors[0];
 	}
+
+	for(int i = 1; i < LAND_TYPES_NBR - 1; ++i){
+		if(height <= landLimits[i]){
+			return colorGraduator(landColors[i], landColors[i+1], height, landLimits[i-1], landLimits[i]);
+		}
+	}
+
+	return landColors[LAND_TYPES_NBR - 1];
 }
 
 void main() {
