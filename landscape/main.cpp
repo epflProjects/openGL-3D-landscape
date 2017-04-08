@@ -52,7 +52,7 @@ void Init(GLFWwindow* window) {
     GLuint heightmap_tex_id = framebuffer.Init(window_width, window_height);
     terrain.Init(heightmap_tex_id);
     screenquad.Init(window_width, window_height, heightmap_tex_id);
-    screenquad.fBmExponentPrecompAndSet(0.9, 2.0);
+    screenquad.fBmExponentPrecompAndSet(1, 1.54);
 
     // render to framebuffer
     framebuffer.Bind();
@@ -88,7 +88,7 @@ void ResizeCallback(GLFWwindow* window, int width, int height) {
     // should also be resized
     framebuffer.Cleanup();
     framebuffer.Init(window_width, window_height);
-    
+
     // render to framebuffer
     framebuffer.Bind();
     {   
