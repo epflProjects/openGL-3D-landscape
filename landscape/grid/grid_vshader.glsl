@@ -5,18 +5,19 @@ in vec2 position;
 out vec2 uv;
 out vec4 vpoint_mv;
 out vec3 light_dir;
+out float height;
 
 uniform mat4 MVP;
 uniform float time;
 uniform sampler2D heightmap_tex;
 
 void main() {
-	vec3 light_pos = vec3(1.0f, 1.0f, 2.0f);
+	vec3 light_pos = vec3(0.0f, 0.0f, 2.0f);
 
     uv = (position + vec2(1.0, 1.0)) * 0.5;
-    float newX = (position.x + 1) * 0.5;
-    float newY = (position.y + 1) * 0.5;
-    float height = (texture(heightmap_tex, vec2(newX, newY)).z)/20; // TODO not sure
+    float newX = position.x;
+    float newY = position.y;
+    height = (texture(heightmap_tex, uv).r)/10;
 
     vpoint_mv = MVP * vec4(vec3(newX, newY, height), 1.0); // TODO not sure
     

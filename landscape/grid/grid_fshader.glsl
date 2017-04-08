@@ -3,10 +3,30 @@
 in vec2 uv;
 in vec4 vpoint_mv;
 in vec3 light_dir;
+in float height;
 
 out vec3 color;
 
 uniform sampler2D tex;
+
+/**
+ * According to the current height, return the correct color
+ * of the field.
+ *
+ */
+vec3 heightColor(float height){
+	//TODO : calculate borns of height according to max/min value of height. (bc magic number is bad.)
+	vec3 blue = vec3(0.0f, 0.0f, 1.0f);
+	vec3 green = vec3(0.0f, 1.0f, 0.0f);
+	vec3 noColor = vec3(0.0f, 0.0f, 0.0f);
+	if(height <= 0.0f){
+		return blue;
+	}else if(height <= 0.01f)
+		return green;
+	else{
+		return noColor;
+	}
+}
 
 void main() {
 	//source : hw3_flatshader.
@@ -26,5 +46,5 @@ void main() {
     if (lambert > 0.0f) {
       vcolor += lambert * Ld;
     }
-    color = vcolor;
+    color = vcolor; //+ heightColor(height);
 }

@@ -56,7 +56,8 @@ void Init(GLFWwindow* window) {
 
     // render to framebuffer
     framebuffer.Bind();
-    {
+    {   
+        glViewport(0,0,window_width,window_height);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         screenquad.Draw();
     }
@@ -87,7 +88,16 @@ void ResizeCallback(GLFWwindow* window, int width, int height) {
     // should also be resized
     framebuffer.Cleanup();
     framebuffer.Init(window_width, window_height);
-    screenquad.UpdateSize(window_width, window_height);
+    
+    // render to framebuffer
+    framebuffer.Bind();
+    {   
+        glViewport(0,0,window_width,window_height);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        screenquad.Draw();
+    }
+    framebuffer.Unbind();
+
 }
 
 // transforms glfw screen coordinates into normalized OpenGL coordinates.
