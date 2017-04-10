@@ -95,5 +95,5 @@ float fBm (vec3 point, float octaves){
 
 void main() {
     float octaves = log(tex_height)/log(2) - 2;
-    color = vec3(fBm(vec3(uv.x*10, uv.y*10, 0), octaves));
+    color = vec3(fBm(vec3(uv.x*3, uv.y*3, 0), octaves));
 }
