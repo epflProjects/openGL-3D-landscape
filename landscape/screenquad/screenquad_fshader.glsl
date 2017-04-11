@@ -182,9 +182,7 @@ float simplex_noise(vec3 v) {
   }
 #endif
 
-//Do the fractal brownian motion.
-//Need to have exponent_array initialized according to frequency and lacunarity. (done on CPU now)
-float fBm (vec3 point, float octaves){
+float RMF (vec3 point, float octaves){
   float result, signal, weight, frequency = 0.6, H = 1.0, offset = 1.0, gain = 2.0;
   int i;
   for (i=0; i<octaves; i++) {
@@ -240,7 +238,26 @@ float fBm (vec3 point, float octaves){
     return (result - 1.4) / 2.0;
 }
 
+//Do the fractal brownian motion.
+//Need to have exponent_array initialized according to frequency and lacunarity. (done on CPU now)
+float fBm (vec3 point, float octaves){
+   float value = 0.0f;
+   int i;
+   for(i = 0; i < octaves; ++i){
+       value += perlin_noise(point.x, point.y, point.z) * exponent_array[i];
+       point.x *= lacunarity;
+       point.y *= lacunarity;
+       point.z *= lacunarity;
+   }
+
+   float remainder = octaves - int(octaves);
+   if(remainder == 0.0){
+       value += remainder * perlin_noise(point.x, point.y, point.z) * exponent_array[i];
+   }
+   return value;
+}
+
 void main() {
     float octaves = log(tex_height)/log(2) - 2;
-    color = vec3(fBm(vec3(uv.x*3, uv.y*3, 0), octaves));
+    color = vec3(RMF(vec3(uv.x*3, uv.y*3, 0), octaves));
 }
