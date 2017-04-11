@@ -36,12 +36,12 @@ vec3 colorGraduator(vec3 currColor, vec3 nextColor, float height, float prevHeig
 vec3 sea = vec3(0, 61, 218);
 vec3 coast = vec3(216, 204, 96);
 vec3 land = vec3(49, 160, 64);
-vec3 forest = vec3(44,86,99);
+vec3 forest = vec3(26, 77, 41);
 vec3 mountain = vec3(142, 142, 142);
 vec3 noColor = vec3(0, 0, 0);
 
 vec3 landColors[LAND_TYPES_NBR] = vec3[](sea, coast, land, forest, noColor, mountain);
-float landLimits[LAND_TYPES_NBR - 1] = float[](0.0f, 0.01f, 0.03f, 0.045f, 0.055f);
+float landLimits[LAND_TYPES_NBR - 1] = float[](0.0f, 0.02f, 0.07f, 0.09f, 0.12f);
 
 
 /**
