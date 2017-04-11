@@ -77,15 +77,11 @@ float noise(float x, float y, float z) {
 //Do the fractinal brownian motion.
 //Need to have exponent_array initialized according to frequency and lacunarity. (done on CPU now)
 float fBm (vec3 point, float octaves){
-    float result, frequency = 0.6, signal, weight, H = 1.0, offset = 1.0, gain = 2.0;
+    float result, signal, weight, frequency = 0.6, H = 1.0, offset = 1.0, gain = 2.0;
     int i;
     
-    bool first = true;
-    if(first){          
-        for (i=0; i<octaves; i++) {
-            frequency *= lacunarity;
-        }
-        first = false;
+    for (i=0; i<octaves; i++) {
+        frequency *= lacunarity;
     }
 
     signal = noise(point.x, point.y, point.z);
