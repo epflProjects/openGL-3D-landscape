@@ -12,7 +12,7 @@ uniform float time;
 uniform sampler2D heightmap_tex;
 
 void main() {
-	vec3 light_pos = vec3(0.0f, 1.0f, 2.0f);
+	vec3 light_pos = vec3(27.0f, 34.0f, 2.0f);
 
     uv = (position + vec2(1.0, 1.0)) * 0.5;
     float newX = position.x;
