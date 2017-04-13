@@ -14,13 +14,14 @@
 #include "trackball.h"
 
 Grid terrain;
+Grid water;
 Trackball trackball;
 
 int window_width = 800;
 int window_height = 600;
 
 FrameBuffer framebuffer;
-ScreenQuad screenquad;
+ScreenQuad heightmap;
 
 using namespace glm;
 
@@ -50,16 +51,17 @@ void Init(GLFWwindow* window) {
     // (see http://www.glfw.org/docs/latest/window.html#window_fbsize)
     glfwGetFramebufferSize(window, &window_width, &window_height);
     GLuint heightmap_tex_id = framebuffer.Init(window_width, window_height);
-    terrain.Init(heightmap_tex_id);
-    screenquad.Init(window_width, window_height, heightmap_tex_id);
-    screenquad.fBmExponentPrecompAndSet(1, 1.54);
+    terrain.Init(heightmap_tex_id, TERRAIN);
+    water.Init(heightmap_tex_id, WATER);
+    heightmap.Init(window_width, window_height, heightmap_tex_id);
+    heightmap.fBmExponentPrecompAndSet(1, 1.54);
 
     // render to framebuffer
     framebuffer.Bind();
     {   
         glViewport(0,0,window_width,window_height);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        screenquad.Draw();
+        heightmap.Draw();
     }
     framebuffer.Unbind();
 
@@ -72,6 +74,7 @@ void Display() {
      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
      const float time = glfwGetTime();
      terrain.Draw(time, trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
+     water.Draw(time, trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
 }
 
 // gets called when the windows/framebuffer is resized.
@@ -94,7 +97,7 @@ void ResizeCallback(GLFWwindow* window, int width, int height) {
     {   
         glViewport(0,0,window_width,window_height);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        screenquad.Draw();
+        heightmap.Draw();
     }
     framebuffer.Unbind();
 
@@ -213,7 +216,7 @@ int main(int argc, char *argv[]) {
     // cleanup
     terrain.Cleanup();
     framebuffer.Cleanup();
-    screenquad.Cleanup();
+    heightmap.Cleanup();
 
     // close OpenGL window and terminate GLFW
     glfwDestroyWindow(window);
