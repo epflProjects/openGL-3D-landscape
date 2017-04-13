@@ -65,6 +65,10 @@ void Init(GLFWwindow* window) {
     }
     framebuffer.Unbind();
 
+    //enable transparency
+    glEnable (GL_BLEND); 
+    glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 }
 
 // gets called for every frame.

@@ -5,7 +5,8 @@ in vec4 vpoint_mv;
 in vec3 light_dir;
 in float height;
 
-out vec3 color;
+//vec4 since we need alpha for blending.
+out vec4 color;
 
 uniform sampler2D tex;
 
@@ -81,5 +82,5 @@ void main() {
     if (lambert > 0.0f) {
       vcolor += (lambert * Ld) * 0.5f;
     }
-    color = vcolor + hexToFloatColor(heightColor(height));
+    color = vec4(vcolor + hexToFloatColor(heightColor(height)), 1);
 }
