@@ -1,7 +1,7 @@
 #version 330
 
 // if 1 the shader uses Perlin Noise, otherwise uses Simplex Noise
-#define PERLIN_NOISE 1
+#define PERLIN_NOISE 0
 
 in vec2 uv;
 in vec3 vp;
@@ -243,16 +243,24 @@ float RMF (vec3 point, float octaves){
 float fBm (vec3 point, float octaves){
    float value = 0.0f;
    int i;
-   for(i = 0; i < octaves; ++i){
+   for(i = 0; i < octaves; ++i) {
+       #if PERLIN_NOISE
        value += perlin_noise(point.x, point.y, point.z) * exponent_array[i];
+       #else
+       value += simplex_noise(point) * exponent_array[i];
+       #endif
        point.x *= lacunarity;
        point.y *= lacunarity;
        point.z *= lacunarity;
    }
 
    float remainder = octaves - int(octaves);
-   if(remainder == 0.0){
+   if(remainder == 0.0) {
+       #if PERLIN_NOISE
        value += remainder * perlin_noise(point.x, point.y, point.z) * exponent_array[i];
+       #else
+       value += remainder * simplex_noise(point) * exponent_array[i];
+       #endif
    }
    return value;
 }
