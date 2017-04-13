@@ -4,19 +4,23 @@
 
 // contains helper functions such as shader compiler
 #include "icg_helper.h"
+#include "glm/gtc/matrix_transform.hpp"
 
-#include <glm/gtc/matrix_transform.hpp>
+#include "framebuffer.h"
 
-#include "cube/cube.h"
 #include "grid/grid.h"
-
+#include "quad/quad.h"
+#include "screenquad/screenquad.h"
 #include "trackball.h"
 
-Cube cube;
-Grid grid;
+Grid terrain;
+Trackball trackball;
 
 int window_width = 800;
 int window_height = 600;
+
+FrameBuffer framebuffer;
+ScreenQuad screenquad;
 
 using namespace glm;
 
@@ -24,121 +28,76 @@ mat4 projection_matrix;
 mat4 view_matrix;
 mat4 trackball_matrix;
 mat4 old_trackball_matrix;
-mat4 cube_scale;
-mat4 quad_model_matrix;
 float last_y;
 
-Trackball trackball;
-
-mat4 OrthographicProjection(float left, float right, float bottom,
-                            float top, float near, float far) {
-    assert(right > left);
-    assert(far > near);
-    assert(top > bottom);
-    mat4 projection = mat4(1.0f);
-    projection[0][0] = 2.0f / (right - left);
-    projection[1][1] = 2.0f / (top - bottom);
-    projection[2][2] = -2.0f / (far - near);
-    projection[3][3] = 1.0f;
-    projection[3][0] = -(right + left) / (right - left);
-    projection[3][1] = -(top + bottom) / (top - bottom);
-    projection[3][2] = -(far + near) / (far - near);
-    return projection;
-}
-
-mat4 PerspectiveProjection(float fovy, float aspect, float near, float far) {
-    // TODO 1: Create a perspective projection matrix given the field of view,
-    // aspect ratio, and near and far plane distances.
-    float top = near * tan(fovy/2.01f); // divided by 2.01 to be more closer to the camera
-    float bottom = -top;
-    float right = top * aspect;
-    float left = -right;
-    mat4 projection = mat4(0.0f);
-    projection[0][0] = (2.0f * near)/(right - left);
-    projection[1][1] = (2.0f * near)/(top - bottom);
-    projection[2][0] = (right + left)/(right - left);
-    projection[2][1] = (top + bottom)/(top - bottom);
-    projection[2][2] = -(far + near)/(far - near);
-    projection[2][3] = -1.0f;
-    projection[3][2] = -(2.0f * far * near)/(far - near);
-    return projection;
-}
-
-mat4 LookAt(vec3 eye, vec3 center, vec3 up) {
-    // we need a function that converts from world coordinates into camera coordiantes.
-    //
-    // cam coords to world coords is given by:
-    // X_world = R * X_cam + eye
-    //
-    // inverting it leads to:
-    //
-    // X_cam = R^T * X_world - R^T * eye
-    //
-    // or as a homogeneous matrix:
-    // [ r_00 r_10 r_20 -r_0*eye
-    //   r_01 r_11 r_21 -r_1*eye
-    //   r_02 r_12 r_22 -r_2*eye
-    //      0    0    0        1 ]
-
-    vec3 z_cam = normalize(eye - center);
-    vec3 x_cam = normalize(cross(up, z_cam));
-    vec3 y_cam = cross(z_cam, x_cam);
-
-    mat3 R(x_cam, y_cam, z_cam);
-    R = transpose(R);
-
-    mat4 look_at(vec4(R[0], 0.0f),
-                 vec4(R[1], 0.0f),
-                 vec4(R[2], 0.0f),
-                 vec4(-R * (eye), 1.0f));
-    return look_at;
-}
-
-void Init() {
-    // sets background color
-    glClearColor(0.937, 0.937, 0.937 /*gray*/, 1.0 /*solid*/);
-
-    cube.Init();
-    grid.Init();
-
-    // enable depth test.
+void Init(GLFWwindow* window) {
+    glClearColor(0.0, 0.0, 0.0 /*black*/, 1.0 /*solid*/);
     glEnable(GL_DEPTH_TEST);
 
-    // TODO 3: once you use the trackball, you should use a view matrix that
-    // looks straight down the -z axis. Otherwise the trackball's rotation gets
-    // applied in a rotated coordinate frame.
-    // uncomment lower line to achieve this.
-    view_matrix = LookAt(vec3(2.0f, 2.0f, 4.0f),
-                         vec3(0.0f, 0.0f, 0.0f),
-                         vec3(0.0f, 1.0f, 0.0f));
+    // setup view and projection matrices
+    vec3 cam_pos(2.0f, 2.0f, 2.0f);
+    vec3 cam_look(0.0f, 0.0f, 0.0f);
+    vec3 cam_up(0.0f, 0.0f, 1.0f);
+    view_matrix = lookAt(cam_pos, cam_look, cam_up);
     view_matrix = translate(mat4(1.0f), vec3(0.0f, 0.0f, -4.0f));
+    float ratio = window_width / (float) window_height;
+    projection_matrix = perspective(45.0f, ratio, 0.1f, 10.0f);
 
     trackball_matrix = IDENTITY_MATRIX;
 
-    // scaling matrix to scale the cube down to a reasonable size.
-    cube_scale = mat4(0.25f, 0.0f,  0.0f,  0.0f,
-                      0.0f,  0.25f, 0.0f,  0.0f,
-                      0.0f,  0.0f,  0.25f, 0.0f,
-                      0.0f,  0.0f,  0.0f,  1.0f);
-    quad_model_matrix = translate(mat4(1.0f), vec3(0.0f, -0.25f, 0.0f));
+    // on retina/hidpi displays, pixels != screen coordinates
+    // this unsures that the framebuffer has the same size as the window
+    // (see http://www.glfw.org/docs/latest/window.html#window_fbsize)
+    glfwGetFramebufferSize(window, &window_width, &window_height);
+    GLuint heightmap_tex_id = framebuffer.Init(window_width, window_height);
+    terrain.Init(heightmap_tex_id);
+    screenquad.Init(window_width, window_height, heightmap_tex_id);
+    screenquad.fBmExponentPrecompAndSet(1, 1.54);
+
+    // render to framebuffer
+    framebuffer.Bind();
+    {   
+        glViewport(0,0,window_width,window_height);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        screenquad.Draw();
+    }
+    framebuffer.Unbind();
+
 }
 
 // gets called for every frame.
 void Display() {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    // render to Window
+     glViewport(0, 0, window_width, window_height);
+     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+     const float time = glfwGetTime();
+     terrain.Draw(time, trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
+}
 
-    const float time = glfwGetTime();
+// gets called when the windows/framebuffer is resized.
+void ResizeCallback(GLFWwindow* window, int width, int height) {
+    window_width = width;
+    window_height = height;
 
-    mat4 cube_transf = rotate(mat4(1.0f), 2.0f * time, vec3(0.0f, 1.0f, 0.0f));
-    cube_transf = translate(cube_transf, vec3(0.75f, 0.0f, 0.0f));
-    cube_transf = rotate(cube_transf, 2.0f * time, vec3(0.0f, 1.0f, 0.0f));
+    float ratio = window_width / (float) window_height;
+    projection_matrix = perspective(45.0f, ratio, 0.1f, 10.0f);
 
-    mat4 cube_model_matrix = cube_transf * cube_scale;
+    glViewport(0, 0, window_width, window_height);
 
-    cube.Draw(trackball_matrix * cube_model_matrix, view_matrix, projection_matrix);
+    // when the window is resized, the framebuffer and the screenquad
+    // should also be resized
+    framebuffer.Cleanup();
+    framebuffer.Init(window_width, window_height);
 
-    // draw a quad on the ground.
-    grid.Draw(time, trackball_matrix * quad_model_matrix, view_matrix, projection_matrix);
+    // render to framebuffer
+    framebuffer.Bind();
+    {   
+        glViewport(0,0,window_width,window_height);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        screenquad.Draw();
+    }
+    framebuffer.Unbind();
+
 }
 
 // transforms glfw screen coordinates into normalized OpenGL coordinates.
@@ -166,21 +125,13 @@ void MouseButton(GLFWwindow* window, int button, int action, int mod) {
 void MousePos(GLFWwindow* window, double x, double y) {
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
         vec2 p = TransformScreenCoords(window, x, y);
-        // TODO 3: Calculate 'trackball_matrix' given the return value of
-        // trackball.Drag(...) and the value stored in 'old_trackball_matrix'.
-        // See also the mouse_button(...) function.
-        // trackball_matrix = ...
+
         mat4 rotation = trackball.Drag(p.x, p.y);
         trackball_matrix = rotation * old_trackball_matrix;
     }
 
     // zoom
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
-        // TODO 4: Implement zooming. When the right mouse button is pressed,
-        // moving the mouse cursor up and down (along the screen's y axis)
-        // should zoom out and it. For that you have to update the current
-        // 'view_matrix' with a translation along the z axis.
-        // view_matrix = ...
         if (y > last_y) {
           view_matrix[3][2] *= 1.01f;
         } else {
@@ -188,25 +139,6 @@ void MousePos(GLFWwindow* window, double x, double y) {
         }
     }
     last_y = y;
-}
-
-// Gets called when the windows/framebuffer is resized.
-void SetupProjection(GLFWwindow* window, int width, int height) {
-    window_width = width;
-    window_height = height;
-
-    cout << "Window has been resized to "
-         << window_width << "x" << window_height << "." << endl;
-
-    glViewport(0, 0, window_width, window_height);
-
-    // TODO 1: Use a perspective projection instead;
-     projection_matrix = PerspectiveProjection(45.0f,
-                                               (GLfloat)window_width / window_height,
-                                               0.1f, 100.0f);
-    // GLfloat top = 1.0f;
-    // GLfloat right = (GLfloat)window_width / window_height * top;
-    // projection_matrix = OrthographicProjection(-right, right, -top, top, -10.0, 10.0f);
 }
 
 void ErrorCallback(int error, const char* description) {
@@ -218,7 +150,6 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
         glfwSetWindowShouldClose(window, GL_TRUE);
     }
 }
-
 
 int main(int argc, char *argv[]) {
     // GLFW Initialization
@@ -240,7 +171,7 @@ int main(int argc, char *argv[]) {
     // note some Intel GPUs do not support OpenGL 3.2
     // note update the driver of your graphic card
     GLFWwindow* window = glfwCreateWindow(window_width, window_height,
-                                          "Trackball", NULL, NULL);
+                                          "framebuffer", NULL, NULL);
     if(!window) {
         glfwTerminate();
         return EXIT_FAILURE;
@@ -253,7 +184,7 @@ int main(int argc, char *argv[]) {
     glfwSetKeyCallback(window, KeyCallback);
 
     // set the framebuffer resize callback
-    glfwSetFramebufferSizeCallback(window, SetupProjection);
+    glfwSetFramebufferSizeCallback(window, ResizeCallback);
 
     // set the mouse press and position callback
     glfwSetMouseButtonCallback(window, MouseButton);
@@ -270,12 +201,7 @@ int main(int argc, char *argv[]) {
     cout << "OpenGL" << glGetString(GL_VERSION) << endl;
 
     // initialize our OpenGL program
-    Init();
-
-    // update the window size with the framebuffer size (on hidpi screens the
-    // framebuffer is bigger)
-    glfwGetFramebufferSize(window, &window_width, &window_height);
-    SetupProjection(window, window_width, window_height);
+    Init(window);
 
     // render loop
     while(!glfwWindowShouldClose(window)){
@@ -284,8 +210,10 @@ int main(int argc, char *argv[]) {
         glfwPollEvents();
     }
 
-    grid.Cleanup();
-    cube.Cleanup();
+    // cleanup
+    terrain.Cleanup();
+    framebuffer.Cleanup();
+    screenquad.Cleanup();
 
     // close OpenGL window and terminate GLFW
     glfwDestroyWindow(window);
