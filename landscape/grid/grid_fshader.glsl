@@ -7,7 +7,10 @@ in float height;
 
 out vec3 color;
 
-uniform sampler2D tex;
+uniform sampler2D grass_tex;
+uniform sampler2D sand_tex;
+uniform sampler2D snow_tex;
+uniform sampler2D rock_tex;
 
 vec3 hexToFloatColor(vec3 hex){
 	return hex/255.0f;
@@ -15,7 +18,7 @@ vec3 hexToFloatColor(vec3 hex){
 
 /**
  * Will construct a color that is in between two colors (currColor and nextColor)
- * according to the current height of the texture. Used to make smooth transition between 
+ * according to the current height of the texture. Used to make smooth transition between
  * the colors of two types of landfield.
  * It is kind of like a mapping.
  *
