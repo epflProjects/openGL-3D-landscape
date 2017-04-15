@@ -1,5 +1,7 @@
 #version 330
 
+#define M_PI 3.14159265359
+
 in vec2 uv;
 in vec4 vpoint_mv;
 in vec3 light_dir;
@@ -11,6 +13,13 @@ uniform sampler2D grass_tex;
 uniform sampler2D sand_tex;
 uniform sampler2D snow_tex;
 uniform sampler2D rock_tex;
+
+float rock_element;
+float grass_element;
+float snow_element;
+float sand_element;
+
+
 
 vec3 hexToFloatColor(vec3 hex){
 	return hex/255.0f;
@@ -68,7 +77,8 @@ vec3 heightColor(float height){
 
 void main() {
 	//source : hw3_flatshader.
-    vec3 vcolor = vec3(0.0f, 0.0f, 0.0f);
+    vec3 diffuse_light = vec3(0.0f, 0.0f, 0.0f);
+		vec3 textures_blend = vec3(0.0f, 0.0f, 0.0f);
     vec3 Ld = vec3(1.0f, 1.0f, 1.0f);
 
     // compute triangle normal using dFdx and dFdy
@@ -78,11 +88,24 @@ void main() {
     vec3 triangle_normal = normalize(cross(x, y));
 
     //compute diffuse term. (source : part of flat_shading hw3)
-    vec3 n = normalize(triangle_normal);
     vec3 l = normalize(light_dir);
-    float lambert = dot(n, l);
+    float lambert = dot(triangle_normal, l);
     if (lambert > 0.0f) {
-      vcolor += (lambert * Ld) * 0.5f;
+      diffuse_light += (lambert * Ld) * 0.5f;
     }
-    color = vcolor + hexToFloatColor(heightColor(height));
+
+		// Textures
+
+		grass_element = clamp(GRASS_INTERP_FACTOR*(height-GRASS_MIN_HEIGHT), 0, 1);
+		rock_element = clamp(ROCK_INTERP_FACTOR*(slope - slopeActualThreshold), 0, 1);
+		snow_element = clamp(SNOW_INTERP_FACTOR*(height-snowActualHeight), 0, 1);
+		sand_element = 1.0f - grass_element;
+
+		float coefficient = grass_element + snow_element + rock_element + sand_element;
+		textures_blend = (grass_element * texture(grass_tex, uv * 10).rgb +
+										 rock_element * texture(rock_tex, uv * 10).rgb +
+										 snow_element * texture(snow_tex, uv * 30).rgb +
+										 sand_element * texture(sand_tex, uv * 60).rgb)/coefficient;
+
+    color = diffuse_light + textures_blend; //hexToFloatColor(heightColor(height));
 }
