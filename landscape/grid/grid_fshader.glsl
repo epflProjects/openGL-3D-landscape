@@ -52,6 +52,12 @@ vec3 forest = vec3(26, 77, 41);
 vec3 mountain = vec3(142, 142, 142);
 vec3 noColor = vec3(0, 0, 0);
 
+const int SEA = 0;
+const int SAND = 1;
+const int GRASS = 2;
+const int ROCK = 3;
+const int SNOW = 4;
+
 vec3 landColors[LAND_TYPES_NBR] = vec3[](sea, coast, land, forest, noColor, mountain);
 float landLimits[LAND_TYPES_NBR - 1] = float[](0.0f, 0.02f, 0.07f, 0.09f, 0.12f);
 
@@ -75,6 +81,27 @@ vec3 heightColor(float height){
 	return landColors[LAND_TYPES_NBR - 1];
 }
 
+
+float getVariableTexture(int texture_variable, float height) {
+		if (height <= landLimits[0]) {
+			return 0.0f;
+		}
+
+		if (height <= landLimits[texture_variable] && height >= landLimits[texture_variable-1]) {
+			float relHeight = height - ((texture_variable==0) ? 0.0f : landLimits[texture_variable-1]);
+			float heightInterval = landLimits[texture_variable] - ((texture_variable==0) ? 0.0f : landLimits[texture_variable-1]);
+			float percentage = relHeight / heightInterval;
+			return percentage;
+		 } //else if (height <= landLimits[texture_variable-1] && height >= landLimits[texture_variable-2]) {
+		// 	float relHeight = height - ((texture_variable==0) ? 0.0f : landLimits[texture_variable-1]);
+		// 	float heightInterval = landLimits[texture_variable] - ((texture_variable==0) ? 0.0f : landLimits[texture_variable-1]);
+		// 	float percentage = relHeight / heightInterval;
+		// 	return 1.0f - percentage;
+		// }
+
+		return 0.0f;
+}
+
 void main() {
 	//source : hw3_flatshader.
     vec3 diffuse_light = vec3(0.0f, 0.0f, 0.0f);
@@ -95,17 +122,21 @@ void main() {
     }
 
 		// Textures
-
-		grass_element = clamp(GRASS_INTERP_FACTOR*(height-GRASS_MIN_HEIGHT), 0, 1);
-		rock_element = clamp(ROCK_INTERP_FACTOR*(slope - slopeActualThreshold), 0, 1);
-		snow_element = clamp(SNOW_INTERP_FACTOR*(height-snowActualHeight), 0, 1);
-		sand_element = 1.0f - grass_element;
+		// grass_element = clamp(0.6f*(height-landLimits[1]), 0, 1);
+		// rock_element = clamp(0.3f*(landLimits[3] - landLimits[4]), 0, 1);
+		// snow_element = clamp(0.2f*(height-landLimits[4]), 0, 1);
+		// sand_element = 1.0f - grass_element;
+		sand_element = getVariableTexture(SAND, height);
+		grass_element = getVariableTexture(GRASS, height);
+		rock_element = getVariableTexture(ROCK, height);
+		snow_element = getVariableTexture(SNOW, height);
 
 		float coefficient = grass_element + snow_element + rock_element + sand_element;
 		textures_blend = (grass_element * texture(grass_tex, uv * 10).rgb +
 										 rock_element * texture(rock_tex, uv * 10).rgb +
 										 snow_element * texture(snow_tex, uv * 30).rgb +
-										 sand_element * texture(sand_tex, uv * 60).rgb)/coefficient;
+										 sand_element * texture(sand_tex, uv * 60).rgb)/(coefficient);
 
-    color = diffuse_light + textures_blend; //hexToFloatColor(heightColor(height));
+    color = diffuse_light + textures_blend;
+		//color = diffuse_light + hexToFloatColor(heightColor(height));
 }
