@@ -2,6 +2,8 @@
 
 #define M_PI 3.14159265359
 
+#define COLOR 0
+
 in vec2 uv;
 in vec4 vpoint_mv;
 in vec3 light_dir;
@@ -9,21 +11,30 @@ in float height;
 
 out vec3 color;
 
-uniform sampler2D grass_tex;
-uniform sampler2D sand_tex;
-uniform sampler2D snow_tex;
-uniform sampler2D rock_tex;
+uniform sampler2D grass_tex; //*10
+uniform sampler2D sand_tex; //*60
+uniform sampler2D snow_tex; //*30
+uniform sampler2D rock_tex; //*10
 
-float rock_element;
-float grass_element;
-float snow_element;
-float sand_element;
+#define LAND_TYPES_NBR 6
 
+float landLimits[LAND_TYPES_NBR - 1] = float[](0.0f, 0.02f, 0.07f, 0.09f, 0.12f);
 
 
-vec3 hexToFloatColor(vec3 hex){
-	return hex/255.0f;
-}
+/**--------------------------------------------------------------------------------**
+ *
+ *							ColorShader code
+ *
+ *---------------------------------------------------------------------------------**/
+
+vec3 sea = vec3(0, 61, 218);
+vec3 coast = vec3(216, 204, 96);
+vec3 land = vec3(49, 160, 64);
+vec3 forest = vec3(26, 77, 41);
+vec3 mountain = vec3(142, 142, 142);
+vec3 noColor = vec3(0, 0, 0);
+
+vec3 landColors[LAND_TYPES_NBR] = vec3[](sea, coast, land, forest, noColor, mountain);
 
 /**
  * Will construct a color that is in between two colors (currColor and nextColor)
@@ -44,24 +55,6 @@ vec3 colorGraduator(vec3 currColor, vec3 nextColor, float height, float prevHeig
 	return currColor + vec3(rGrad * percentage, gGrad * percentage, bGrad * percentage);
 }
 
-#define LAND_TYPES_NBR 6
-vec3 sea = vec3(0, 61, 218);
-vec3 coast = vec3(216, 204, 96);
-vec3 land = vec3(49, 160, 64);
-vec3 forest = vec3(26, 77, 41);
-vec3 mountain = vec3(142, 142, 142);
-vec3 noColor = vec3(0, 0, 0);
-
-const int SEA = 0;
-const int SAND = 1;
-const int GRASS = 2;
-const int ROCK = 3;
-const int SNOW = 4;
-
-vec3 landColors[LAND_TYPES_NBR] = vec3[](sea, coast, land, forest, noColor, mountain);
-float landLimits[LAND_TYPES_NBR - 1] = float[](0.0f, 0.02f, 0.07f, 0.09f, 0.12f);
-
-
 /**
  * According to the current height, return the correct color
  * of the field in HEX form.
@@ -81,31 +74,68 @@ vec3 heightColor(float height){
 	return landColors[LAND_TYPES_NBR - 1];
 }
 
-
-float getVariableTexture(int texture_variable, float height) {
-		if (height <= landLimits[0]) {
-			return 0.0f;
-		}
-
-		if (height <= landLimits[texture_variable] && height >= landLimits[texture_variable-1]) {
-			float relHeight = height - ((texture_variable==0) ? 0.0f : landLimits[texture_variable-1]);
-			float heightInterval = landLimits[texture_variable] - ((texture_variable==0) ? 0.0f : landLimits[texture_variable-1]);
-			float percentage = relHeight / heightInterval;
-			return percentage;
-		 } //else if (height <= landLimits[texture_variable-1] && height >= landLimits[texture_variable-2]) {
-		// 	float relHeight = height - ((texture_variable==0) ? 0.0f : landLimits[texture_variable-1]);
-		// 	float heightInterval = landLimits[texture_variable] - ((texture_variable==0) ? 0.0f : landLimits[texture_variable-1]);
-		// 	float percentage = relHeight / heightInterval;
-		// 	return 1.0f - percentage;
-		// }
-
-		return 0.0f;
+vec3 hexToFloatColor(vec3 hex){
+	return hex/255.0f;
 }
+
+/**--------------------------------------------------------------------------------**
+ *
+ *							TextureShader code
+ *
+ *---------------------------------------------------------------------------------**/
+
+
+const int SAND = 0;
+const int GRASS = 1;
+const int ROCK = 2;
+const int SNOW = 3;
+
+int landTexture[LAND_TYPES_NBR - 1] = int[](SAND, SAND, GRASS, ROCK, SNOW);
+
+/*
+	Will return the adjusted (according to the UV and texture type) rgba of the texture according to the corresponding selector.
+*/
+vec4 getTexture(int sel){
+	switch(sel){
+		case SAND:
+			return texture(sand_tex, uv*60);
+		case GRASS:
+			return texture(grass_tex, uv*10);
+		case SNOW:
+			return texture(snow_tex, uv*30);
+		case ROCK:
+			return texture(rock_tex, uv*10);
+		default:
+			return texture(sand_tex, uv*60);
+	}
+}
+
+vec4 getTexture(float height){
+	float floor = 0.0f;
+	float ceil = 0.12f;
+	if(height < floor){
+		return texture(sand_tex, uv * 10);
+	}else if(height > ceil){
+		return texture(grass_tex, uv * 60);
+	}else{
+		float interval = (ceil - floor);
+		float loPercentage = (interval - height)/interval;
+		vec4 texLo = texture(sand_tex , uv * 10);
+		vec4 texUp = texture(grass_tex, uv * 60);
+		return mix(texLo, texUp, 1-loPercentage);
+	}
+}
+
+/**--------------------------------------------------------------------------------**
+ *
+ *							MainShader code
+ *
+ *---------------------------------------------------------------------------------**/
 
 void main() {
 	//source : hw3_flatshader.
     vec3 diffuse_light = vec3(0.0f, 0.0f, 0.0f);
-		vec3 textures_blend = vec3(0.0f, 0.0f, 0.0f);
+	vec3 textures_blend = vec3(0.0f, 0.0f, 0.0f);
     vec3 Ld = vec3(1.0f, 1.0f, 1.0f);
 
     // compute triangle normal using dFdx and dFdy
@@ -121,22 +151,8 @@ void main() {
       diffuse_light += (lambert * Ld) * 0.5f;
     }
 
-		// Textures
-		// grass_element = clamp(0.6f*(height-landLimits[1]), 0, 1);
-		// rock_element = clamp(0.3f*(landLimits[3] - landLimits[4]), 0, 1);
-		// snow_element = clamp(0.2f*(height-landLimits[4]), 0, 1);
-		// sand_element = 1.0f - grass_element;
-		sand_element = getVariableTexture(SAND, height);
-		grass_element = getVariableTexture(GRASS, height);
-		rock_element = getVariableTexture(ROCK, height);
-		snow_element = getVariableTexture(SNOW, height);
-
-		float coefficient = grass_element + snow_element + rock_element + sand_element;
-		textures_blend = (grass_element * texture(grass_tex, uv * 10).rgb +
-										 rock_element * texture(rock_tex, uv * 10).rgb +
-										 snow_element * texture(snow_tex, uv * 30).rgb +
-										 sand_element * texture(sand_tex, uv * 60).rgb)/(coefficient);
-
-    color = diffuse_light + textures_blend;
-		//color = diffuse_light + hexToFloatColor(heightColor(height));
+    color = 0.5*diffuse_light + getTexture(height).rgb;
+#if COLOR
+	color = diffuse_light + hexToFloatColor(heightColor(height));
+#endif
 }
