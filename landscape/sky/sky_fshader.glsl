@@ -4,8 +4,8 @@ in vec2 uv;
 
 out vec3 color;
 
-uniform sampler2D tex;
+uniform sampler2D skyTex;
 
 void main() {
-    color = texture(tex, uv).rgb;
+    color = texture(skyTex, uv).rgb;
 }

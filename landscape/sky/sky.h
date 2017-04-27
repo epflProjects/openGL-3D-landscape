@@ -214,7 +214,7 @@ class Sky {
                                  GL_RGBA, GL_UNSIGNED_BYTE, image);
                 }
 
-                GLuint tex_id = glGetUniformLocation(program_id_, "tex");
+                GLuint tex_id = glGetUniformLocation(program_id_, "skyTex");
                 glUniform1i(tex_id, 0 /*GL_TEXTURE0*/);
 
                 // cleanup
