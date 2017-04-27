@@ -18,7 +18,7 @@ uniform sampler2D rock_tex; //*10
 
 #define LAND_TYPES_NBR 6
 
-float landLimits[LAND_TYPES_NBR - 1] = float[](0.0f, 0.02f, 0.07f, 0.09f, 0.12f);
+float landLimits[LAND_TYPES_NBR - 1] = float[](0.0f, 0.01f, 0.04f, 0.12f, 0.14f);
 
 
 /**--------------------------------------------------------------------------------**
@@ -90,26 +90,36 @@ const int GRASS = 1;
 const int ROCK = 2;
 const int SNOW = 3;
 
-int landTexture[LAND_TYPES_NBR - 1] = int[](SAND, SAND, GRASS, ROCK, SNOW);
+int landTexture[LAND_TYPES_NBR] = int[](SAND, SAND, GRASS, ROCK, SNOW, SNOW);
 
 /*
-	Will return the adjusted (according to the UV and texture type) rgba of the texture according to the corresponding selector.
+	Will return the adjusted (according to the UV and texture type) 
+	rgba of the texture according to the corresponding selector.
 */
 vec4 getTexture(int sel){
+	vec4 toRet = vec4(0.0f, 0.0f, 0.0f, 0.0f);
 	switch(sel){
 		case SAND:
-			return texture(sand_tex, uv*60);
+			toRet = texture(sand_tex, uv*60);
+			break;
 		case GRASS:
-			return texture(grass_tex, uv*10);
+			toRet = texture(grass_tex, uv*10);
+			break;
 		case SNOW:
-			return texture(snow_tex, uv*30);
+			toRet = texture(snow_tex, uv*60);
+			break;
 		case ROCK:
-			return texture(rock_tex, uv*10);
+			toRet = texture(rock_tex, uv*10);
+			break;
 		default:
-			return texture(sand_tex, uv*60);
+			toRet = texture(sand_tex, uv*60);
+			break;
 	}
+	return toRet;
 }
 
+
+//kept for historical reason
 vec4 getTexture(float height){
 	float floor = 0.0f;
 	float ceil = 0.12f;
@@ -124,6 +134,30 @@ vec4 getTexture(float height){
 		vec4 texUp = texture(grass_tex, uv * 60);
 		return mix(texLo, texUp, 1-loPercentage);
 	}
+}
+
+
+/**
+ * According to the current height, return the correct color texture of
+ *	the terrain.
+ */
+vec4 heightTexture(float height){
+
+	if(height <= landLimits[0]){
+		return getTexture(landTexture[0]);
+	}
+
+	for(int i = 1; i < LAND_TYPES_NBR - 1; ++i){
+		if(height <= landLimits[i]){
+
+			float interval = landLimits[i] - landLimits[i - 1];
+			float deltaHeight = height - landLimits[i - 1];
+			float percentage = 1 - ((interval - deltaHeight)/interval);
+			return mix(getTexture(landTexture[i-1]), getTexture(landTexture[i]), percentage);
+		}
+	}
+
+	return getTexture(landTexture[LAND_TYPES_NBR-1]);
 }
 
 /**--------------------------------------------------------------------------------**
@@ -151,7 +185,7 @@ void main() {
       diffuse_light += (lambert * Ld) * 0.5f;
     }
 
-    color = 0.5*diffuse_light + getTexture(height).rgb;
+    color = 0.5*diffuse_light + heightTexture(height).rgb;
 #if COLOR
 	color = diffuse_light + hexToFloatColor(heightColor(height));
 #endif
