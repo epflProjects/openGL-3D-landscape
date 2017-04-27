@@ -205,7 +205,7 @@ class Sky {
             // bind textures
             glActiveTexture(GL_TEXTURE0);
 
-            //glBindTexture(GL_TEXTURE_2D, texture_id_);
+            glBindTexture(GL_TEXTURE_2D, texture_id_);
 
             // time
             glUniform1f(glGetUniformLocation(program_id_, "time"), glfwGetTime());
