@@ -144,7 +144,6 @@ class Grid {
                   const glm::mat4 &projection = IDENTITY_MATRIX) {
             glUseProgram(program_id_);
             glBindVertexArray(vertex_array_id_);
-            std::cout << "map_texture ID : " << texture_id_ << endl; // TODO remove
 
             // setup MVP
             glm::mat4 MVP = projection*view*model;
