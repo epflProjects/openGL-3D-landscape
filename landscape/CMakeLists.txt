@@ -8,7 +8,9 @@ file(GLOB TEXTURES
     grid/rock_texture.tga
     grid/sand_texture.tga
     grid/snow_texture.tga
-    grid/grass_texture.tga)
+    grid/grass_texture.tga
+    sky/sky_texture.tga
+    grid/grid_texture.tga)
 copy_files_once(${TEXTURES})
 
 # list all the files you want to copy everytime
@@ -16,6 +18,7 @@ copy_files_once(${TEXTURES})
 file(GLOB SHADERS
     grid/*glsl
     quad/*.glsl
+    sky/*.glsl
     screenquad/*.glsl)
 deploy_shaders_to_build_dir(${SHADERS})
 

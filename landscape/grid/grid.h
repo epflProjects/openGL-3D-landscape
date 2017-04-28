@@ -2,6 +2,12 @@
 #include "icg_helper.h"
 #include <glm/gtc/type_ptr.hpp>
 
+using namespace std;
+
+enum GridType {
+    TERRAIN,
+    WATER
+};
 
 class Grid {
 
@@ -53,15 +59,28 @@ class Grid {
         }
 
     public:
-        void Init(GLuint heightmap_tex_id) {
+        void Init(GLuint heightmap_tex_id, enum GridType gT) {
             // compile the shaders.
-            program_id_ = icg_helper::LoadShaders("grid_vshader.glsl",
-                                                  "grid_fshader.glsl");
+            string prefix;
+            switch(gT){
+                case TERRAIN:
+                    prefix = "terrain";
+                    break;
+                case WATER:
+                    prefix = "water";
+                    break;
+                default:
+                    prefix = "terrain";
+            }
+            program_id_ = icg_helper::LoadShaders((prefix + "_vshader.glsl").c_str(),
+                                                  (prefix + "_fshader.glsl").c_str());
             if(!program_id_) {
                 exit(EXIT_FAILURE);
             }
 
             glUseProgram(program_id_);
+
+
 
             // vertex one vertex array
             glGenVertexArrays(1, &vertex_array_id_);
@@ -71,7 +90,7 @@ class Grid {
             {
                 std::vector<GLfloat> vertices;
                 std::vector<GLuint> indices;
-                // make a triangle grid with dimension 512x512.
+                // make a triangle grid with dimension 1024x1024.
                 // always two subsequent entries in 'vertices' form a 2D vertex position.
                 int grid_dim = 1024;
 
@@ -176,6 +195,9 @@ class Grid {
             glBindVertexArray(vertex_array_id_);
 
             // bind textures
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, heightmap_tex_id_);
+
             glActiveTexture(GL_TEXTURE0+1);
             glBindTexture(GL_TEXTURE_2D, grass_texture_id_);
 
