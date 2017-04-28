@@ -1,7 +1,7 @@
 #version 330
 
 // if 1 the shader uses Perlin Noise, otherwise uses Simplex Noise
-#define PERLIN_NOISE 0
+#define PERLIN_NOISE 1
 
 in vec2 uv;
 in vec3 vp;

@@ -12,10 +12,12 @@
 #include "quad/quad.h"
 #include "screenquad/screenquad.h"
 #include "trackball.h"
+#include "sky/sky.h"
 
 Grid terrain;
 Grid water;
 Trackball trackball;
+Sky sky;
 
 int window_width = 800;
 int window_height = 600;
@@ -29,14 +31,17 @@ mat4 projection_matrix;
 mat4 view_matrix;
 mat4 trackball_matrix;
 mat4 old_trackball_matrix;
+
 float last_y;
 
 void Init(GLFWwindow* window) {
     glClearColor(0.0, 0.0, 0.0 /*black*/, 1.0 /*solid*/);
     glEnable(GL_DEPTH_TEST);
 
+    sky.Init();
+
     // setup view and projection matrices
-    vec3 cam_pos(2.0f, 2.0f, 2.0f);
+    vec3 cam_pos(1.0f, 1.0f, 1.0f);
     vec3 cam_look(0.0f, 0.0f, 0.0f);
     vec3 cam_up(0.0f, 0.0f, 1.0f);
     view_matrix = lookAt(cam_pos, cam_look, cam_up);
@@ -68,17 +73,17 @@ void Init(GLFWwindow* window) {
     //enable transparency
     glEnable (GL_BLEND); 
     glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
 }
 
 // gets called for every frame.
 void Display() {
-    // render to Window
-     glViewport(0, 0, window_width, window_height);
-     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-     const float time = glfwGetTime();
-     terrain.Draw(time, trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
-     water.Draw(time, trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
+    // render to window
+    glViewport(0, 0, window_width, window_height);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    const float time = glfwGetTime();
+    terrain.Draw(time, trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
+    sky.Draw(trackball_matrix, view_matrix, projection_matrix);
+    water.Draw(time, trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
 }
 
 // gets called when the windows/framebuffer is resized.
@@ -220,7 +225,7 @@ int main(int argc, char *argv[]) {
     // cleanup
     terrain.Cleanup();
     framebuffer.Cleanup();
-    heightmap.Cleanup();
+    sky.Cleanup();
 
     // close OpenGL window and terminate GLFW
     glfwDestroyWindow(window);
