@@ -73,29 +73,17 @@ void Init(GLFWwindow* window) {
     //enable transparency
     glEnable (GL_BLEND); 
     glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-<<<<<<< HEAD
-=======
-
->>>>>>> master
 }
 
 // gets called for every frame.
 void Display() {
-    // render to Window
-<<<<<<< HEAD
+    // render to window
     glViewport(0, 0, window_width, window_height);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     const float time = glfwGetTime();
     terrain.Draw(time, trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
     sky.Draw(trackball_matrix, view_matrix, projection_matrix);
     water.Draw(time, trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
-=======
-     glViewport(0, 0, window_width, window_height);
-     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-     const float time = glfwGetTime();
-     terrain.Draw(time, trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
-     water.Draw(time, trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
->>>>>>> master
 }
 
 // gets called when the windows/framebuffer is resized.
@@ -237,11 +225,7 @@ int main(int argc, char *argv[]) {
     // cleanup
     terrain.Cleanup();
     framebuffer.Cleanup();
-<<<<<<< HEAD
     sky.Cleanup();
-=======
->>>>>>> master
-    heightmap.Cleanup();
 
     // close OpenGL window and terminate GLFW
     glfwDestroyWindow(window);
