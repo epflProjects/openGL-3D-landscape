@@ -5,7 +5,8 @@ in vec4 vpoint_mv;
 in vec3 light_dir;
 in float height;
 
-out vec3 color;
+//vec4 since we need alpha for blending.
+out vec4 color;
 
 uniform sampler2D tex;
 
@@ -33,14 +34,14 @@ vec3 colorGraduator(vec3 currColor, vec3 nextColor, float height, float prevHeig
 }
 
 #define LAND_TYPES_NBR 6
-vec3 sea = vec3(0, 61, 218);
+vec3 underwater = vec3(116, 90, 5);
 vec3 coast = vec3(216, 204, 96);
 vec3 land = vec3(49, 160, 64);
 vec3 forest = vec3(26, 77, 41);
 vec3 mountain = vec3(142, 142, 142);
 vec3 noColor = vec3(0, 0, 0);
 
-vec3 landColors[LAND_TYPES_NBR] = vec3[](sea, coast, land, forest, noColor, mountain);
+vec3 landColors[LAND_TYPES_NBR] = vec3[](underwater, coast, land, forest, noColor, mountain);
 float landLimits[LAND_TYPES_NBR - 1] = float[](0.0f, 0.02f, 0.07f, 0.09f, 0.12f);
 
 
@@ -81,5 +82,5 @@ void main() {
     if (lambert > 0.0f) {
       vcolor += (lambert * Ld) * 0.5f;
     }
-    color = vcolor + hexToFloatColor(heightColor(height));
+    color = vec4(vcolor + hexToFloatColor(heightColor(height)), 1);
 }
