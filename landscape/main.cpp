@@ -21,6 +21,7 @@ Sky sky;
 
 int window_width = 800;
 int window_height = 600;
+const int tex_width = 2048;
 
 FrameBuffer framebuffer;
 ScreenQuad heightmap;
@@ -55,20 +56,22 @@ void Init(GLFWwindow* window) {
     // this unsures that the framebuffer has the same size as the window
     // (see http://www.glfw.org/docs/latest/window.html#window_fbsize)
     glfwGetFramebufferSize(window, &window_width, &window_height);
-    GLuint heightmap_tex_id = framebuffer.Init(window_width, window_height);
+    GLuint heightmap_tex_id = framebuffer.Init(tex_width, tex_width);
     terrain.Init(heightmap_tex_id, TERRAIN);
     water.Init(heightmap_tex_id, WATER);
-    heightmap.Init(window_width, window_height, heightmap_tex_id);
+    heightmap.Init(tex_width, tex_width, heightmap_tex_id);
     heightmap.fBmExponentPrecompAndSet(1, 1.54);
 
     // render to framebuffer
     framebuffer.Bind();
     {   
-        glViewport(0,0,window_width,window_height);
+        glViewport(0,0,tex_width,tex_width);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         heightmap.Draw();
     }
     framebuffer.Unbind();
+    cout << window_height << endl;
+    cout << window_width << endl;
 
     //enable transparency
     glEnable (GL_BLEND); 
@@ -99,12 +102,12 @@ void ResizeCallback(GLFWwindow* window, int width, int height) {
     // when the window is resized, the framebuffer and the screenquad
     // should also be resized
     framebuffer.Cleanup();
-    framebuffer.Init(window_width, window_height);
+    framebuffer.Init(tex_width, tex_width);
 
     // render to framebuffer
     framebuffer.Bind();
     {   
-        glViewport(0,0,window_width,window_height);
+        glViewport(0,0,tex_width,tex_width);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         heightmap.Draw();
     }

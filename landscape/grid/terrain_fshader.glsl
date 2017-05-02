@@ -187,6 +187,6 @@ void main() {
     }
     color = vec4(0.5*diffuse_light + heightTexture(height).rgb, 1);
 #if COLOR
-	color = vec4(diffuse_light + hexToFloatColor(heightColor(height))cd, 1);
+	color = vec4(diffuse_light + hexToFloatColor(heightColor(height)), 1);
 #endif
 }
