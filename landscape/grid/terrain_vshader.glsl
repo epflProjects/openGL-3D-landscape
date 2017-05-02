@@ -19,7 +19,7 @@ void main() {
     float newY = position.y;
     height = (texture(heightmap_tex, uv).r)/3.0f;
 
-    vpoint_mv = MVP * vec4(vec3(newX, newY, height), 1.0); // TODO not sure
+    vpoint_mv = MVP * vec4(vec3(newX, newY, height), 1.0);
 
     //for diffuse lightning on frag shader.
     light_dir = light_pos - vpoint_mv.xyz;
