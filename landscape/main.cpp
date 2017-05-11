@@ -64,17 +64,15 @@ void Init(GLFWwindow* window) {
 
     // render to framebuffer
     framebuffer.Bind();
-    {   
+    {
         glViewport(0,0,tex_width,tex_width);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         heightmap.Draw();
     }
     framebuffer.Unbind();
-    cout << window_height << endl;
-    cout << window_width << endl;
 
     //enable transparency
-    glEnable (GL_BLEND); 
+    glEnable (GL_BLEND);
     glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
@@ -106,7 +104,7 @@ void ResizeCallback(GLFWwindow* window, int width, int height) {
 
     // render to framebuffer
     framebuffer.Bind();
-    {   
+    {
         glViewport(0,0,tex_width,tex_width);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         heightmap.Draw();
