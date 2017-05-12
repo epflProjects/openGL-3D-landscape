@@ -33,6 +33,12 @@ mat4 view_matrix;
 mat4 trackball_matrix;
 mat4 old_trackball_matrix;
 
+vec3 cam_pos;
+vec3 cam_look;
+vec3 cam_up;
+
+float view_matrix_3_2;
+
 float last_y;
 
 void Init(GLFWwindow* window) {
@@ -42,11 +48,12 @@ void Init(GLFWwindow* window) {
     sky.Init();
 
     // setup view and projection matrices
-    vec3 cam_pos(1.0f, 1.0f, 1.0f);
-    vec3 cam_look(0.0f, 0.0f, 0.0f);
-    vec3 cam_up(0.0f, 0.0f, 1.0f);
+    cam_pos = vec3(0.0f, 1.0f, 2.0f);
+    cam_look = vec3(0.0f, 0.0f, 0.0f);
+    cam_up = vec3(0.0f, 0.0f, -1.0f);
     view_matrix = lookAt(cam_pos, cam_look, cam_up);
-    view_matrix = translate(mat4(1.0f), vec3(0.0f, 0.0f, -4.0f));
+   // view_matrix = translate(mat4(1.0f), vec3(0.0f, 0.0f, -4.0f));
+    view_matrix_3_2 = view_matrix[3][2];
     float ratio = window_width / (float) window_height;
     projection_matrix = perspective(45.0f, ratio, 0.1f, 10.0f);
 
@@ -87,6 +94,11 @@ void Display() {
     terrain.Draw(time, trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
     sky.Draw(trackball_matrix, view_matrix, projection_matrix);
     water.Draw(time, trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
+
+    cout << "display" << cam_look[2] << endl;
+    view_matrix = lookAt(cam_pos, cam_look, cam_up);
+    //view_matrix = translate(mat4(1.0f), vec3(0.0f, 0.0f, -4.0f));
+    view_matrix[3][2] = view_matrix_3_2;
 }
 
 // gets called when the windows/framebuffer is resized.
@@ -148,9 +160,11 @@ void MousePos(GLFWwindow* window, double x, double y) {
     // zoom
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
         if (y > last_y) {
-          view_matrix[3][2] *= 1.01f;
+            view_matrix[3][2] *= 1.01f;
+            view_matrix_3_2 = view_matrix[3][2];
         } else {
-          view_matrix[3][2] /= 1.01f;
+            view_matrix[3][2] /= 1.01f;
+            view_matrix_3_2 = view_matrix[3][2];
         }
     }
     last_y = y;
@@ -163,6 +177,41 @@ void ErrorCallback(int error, const char* description) {
 void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, GL_TRUE);
+    }
+
+    switch(key) {
+        case 'W':
+            cout << "W : forward" << endl;
+            view_matrix[3][2] += 0.05f;
+            view_matrix_3_2 = view_matrix[3][2];
+            break;
+        case 'S':
+            cout << "S : backward" << endl;
+            view_matrix[3][2] -= 0.05f;
+            view_matrix_3_2 = view_matrix[3][2];
+            break;
+        case 'A':
+            cout << "A : bow up" << endl;
+            // trackball_matrix = rotate(mat4(1.0f), 0.05f, vec3(1.0f, 0.0f, 0.0f)) * old_trackball_matrix;
+            // old_trackball_matrix = trackball_matrix;
+            cam_pos[1] += 0.1f;
+            break;
+        case 'D':
+            cout << "D : bow down" << endl;
+            // trackball_matrix = rotate(mat4(1.0f), -0.05f, vec3(1.0f, 0.0f, 0.0f)) * old_trackball_matrix;
+            // old_trackball_matrix = trackball_matrix;
+            cam_up[1] += 0.1f;
+            break;
+        case 'Q':
+            cout << "Q : up" << endl;
+
+            break;
+        case 'E':
+            cout << "E : down" << endl;
+            view_matrix[2][2] /= 1.05f;
+            break;
+        default:
+            break;
     }
 }
 
@@ -195,7 +244,7 @@ int main(int argc, char *argv[]) {
     // makes the OpenGL context of window current on the calling thread
     glfwMakeContextCurrent(window);
 
-    // set the callback for escape key
+    // set the callback for escape key and camera movements
     glfwSetKeyCallback(window, KeyCallback);
 
     // set the framebuffer resize callback
