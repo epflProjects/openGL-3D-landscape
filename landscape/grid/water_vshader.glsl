@@ -17,8 +17,6 @@ uniform sampler2D heightmap_tex;
 
 void main() {
     //gl_Position = MVP * vec4(position.x, 0.0, -position.y, 1.0);
-
-
     uv = (position + vec2(1.0, 1.0)) * 0.5;
 
     // convert the 2D position into 3D positions that all lay in a horizontal
@@ -27,9 +25,9 @@ void main() {
     float newX = position.x;
     float newY = position.y;
 
-    float A[WAVE_NBR] = float[](0.016, 0.021, 0.014, 0.017, 0.014); 
+    float A[WAVE_NBR] = float[](0.0006, 0.00021, 0.00014, 0.00017, 0.00014); 
     vec2 D[WAVE_NBR] = vec2[](vec2(1.0, 1.0), vec2(0.0, 0.9), vec2(-0.4, 0.6), vec2(0.7, -0.8), vec2(-0.9, -1.0));
-    float L[WAVE_NBR] = float[](0.3, 0.4, 0.3, 0.4, 0.5);
+    float L[WAVE_NBR] = float[](0.0003, 0.0004, 0.0003, 0.0004, 0.0005);
     float S[WAVE_NBR] = float[](0.2, 0.15, 0.19, 0.3, 0.25);
     
     float x = uv[0];
@@ -50,7 +48,3 @@ void main() {
     vec3 pos_3d = vec3(newX, height, -newY);
     gl_Position = MVP * vec4(pos_3d, 1.0);
 }
-}
-
-/*
-

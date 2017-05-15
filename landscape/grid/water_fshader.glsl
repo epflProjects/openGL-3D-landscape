@@ -14,5 +14,5 @@ vec3 hexToFloatColor(vec3 hex){
 }
 
 void main() {
-    color = vec4(hexToFloatColor(vec3(45,47,220)), 0.7f);
+    color = vec4(hexToFloatColor(vec3(104,128,156)), 0.7f);
 }
