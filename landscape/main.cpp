@@ -13,9 +13,11 @@
 #include "screenquad/screenquad.h"
 #include "trackball.h"
 #include "sky/sky.h"
+#include "water/water.h"
 
 Grid terrain;
-Grid water;
+//Grid water;
+Water water;
 Trackball trackball;
 Sky sky;
 
@@ -57,8 +59,9 @@ void Init(GLFWwindow* window) {
     // (see http://www.glfw.org/docs/latest/window.html#window_fbsize)
     glfwGetFramebufferSize(window, &window_width, &window_height);
     GLuint heightmap_tex_id = framebuffer.Init(tex_width, tex_width);
-    terrain.Init(heightmap_tex_id, TERRAIN);
-    water.Init(heightmap_tex_id, WATER);
+    terrain.Init(heightmap_tex_id);
+    //(OLD) water.Init(heightmap_tex_id, WATER);
+    water.Init(heightmap_tex_id);
     heightmap.Init(tex_width, tex_width, heightmap_tex_id);
     heightmap.fBmExponentPrecompAndSet(1, 1.54);
 
@@ -70,8 +73,6 @@ void Init(GLFWwindow* window) {
         heightmap.Draw();
     }
     framebuffer.Unbind();
-    cout << window_height << endl;
-    cout << window_width << endl;
 
     //enable transparency
     glEnable (GL_BLEND); 
@@ -86,7 +87,9 @@ void Display() {
     const float time = glfwGetTime();
     terrain.Draw(time, trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
     sky.Draw(trackball_matrix, view_matrix, projection_matrix);
+    //(OLD) water.Draw(time, trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
     water.Draw(time, trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
+    
 }
 
 // gets called when the windows/framebuffer is resized.
