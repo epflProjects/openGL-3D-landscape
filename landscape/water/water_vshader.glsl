@@ -9,7 +9,6 @@ out float height;
 
 uniform mat4 MVP;
 uniform float time;
-uniform sampler2D heightmap_tex;
 
 #define PI 3.14159265358979323846264338328
 

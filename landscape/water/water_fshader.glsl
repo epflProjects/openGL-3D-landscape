@@ -7,7 +7,7 @@ in float height;
 
 out vec4 color;
 
-uniform sampler2D tex;
+uniform sampler2D tex_mirror;
 
 vec3 hexToFloatColor(vec3 hex){
 	return hex/255.0f;

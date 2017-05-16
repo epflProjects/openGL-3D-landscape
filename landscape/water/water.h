@@ -12,12 +12,12 @@ class Water {
         GLuint vertex_buffer_object_index_;     // memory buffer for indices
         GLuint program_id_;                     // GLSL shader program ID
         GLuint num_indices_;                    // number of vertices to render
-        GLuint texture_mirror_id;
+        GLuint texture_mirror_id_;              // texture mirror ID
         GLuint MVP_id_;                         // model, view, proj matrix ID
 
 
     public:
-        void Init(GLuint tex_mirror = -1) {
+        void Init(GLuint tex_mirror) {
             // compile the shaders.
             program_id_ = icg_helper::LoadShaders("water_vshader.glsl",
                                                   "water_fshader.glsl");
@@ -76,7 +76,6 @@ class Water {
                     idx = idx + increment;
                 }
 
-
                 num_indices_ = indices.size();
 
                 // position buffer
@@ -98,16 +97,16 @@ class Water {
                                       ZERO_STRIDE, ZERO_BUFFER_OFFSET);
             }
 
-
-            // heightmap texture
-            /*this->heightmap_tex_id_ = heightmap_tex_id;
-            glBindTexture(GL_TEXTURE_2D, this->heightmap_tex_id_);
-            GLuint heightmap_id = glGetUniformLocation(program_id_, "heightmap_tex");
-            glUniform1i(heightmap_id, 0 );
-            glBindTexture(GL_TEXTURE_2D, GL_TEXTURE0);*/
+            //load mirror texture
+            texture_mirror_id_ = tex_mirror;
+            GLuint tex_mirror_id = glGetUniformLocation(program_id_, "tex_mirror");
+            glUniform1i(tex_mirror_id, 0 /*GL_TEXTURE0*/);
 
             // other uniforms
             MVP_id_ = glGetUniformLocation(program_id_, "MVP");
+
+            //not sure about this one.
+            glBindTexture(GL_TEXTURE_2D, 0);
 
             // to avoid the current object being polluted
             glBindVertexArray(0);
@@ -121,7 +120,7 @@ class Water {
             glDeleteBuffers(1, &vertex_buffer_object_index_);
             glDeleteVertexArrays(1, &vertex_array_id_);
             glDeleteProgram(program_id_);
-            //glDeleteTextures(1, &heightmap_tex_id_);
+            glDeleteTextures(1, &texture_mirror_id_);
         }
 
         void Draw(float time, const glm::mat4 &model = IDENTITY_MATRIX,
@@ -131,8 +130,8 @@ class Water {
             glBindVertexArray(vertex_array_id_);
 
             // bind textures
-            /*glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, heightmap_tex_id_);*/
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, texture_mirror_id_);
 
             // setup MVP
             glm::mat4 MVP = projection*view*model;

@@ -16,7 +16,6 @@
 #include "water/water.h"
 
 Grid terrain;
-//Grid water;
 Water water;
 Trackball trackball;
 Sky sky;
@@ -26,6 +25,7 @@ int window_height = 600;
 const int tex_width = 2048;
 
 FrameBuffer framebuffer;
+FrameBuffer mirrorBuffer;
 ScreenQuad heightmap;
 
 using namespace glm;
@@ -35,20 +35,26 @@ mat4 view_matrix;
 mat4 trackball_matrix;
 mat4 old_trackball_matrix;
 
+vec3 cam_pos;
+vec3 cam_look;
+vec3 cam_up;
+
 float last_y;
 
 void Init(GLFWwindow* window) {
     glClearColor(0.0, 0.0, 0.0 /*black*/, 1.0 /*solid*/);
     glEnable(GL_DEPTH_TEST);
+    //added for floor reflection, not sure if need to be kept.
+    glEnable(GL_MULTISAMPLE);
 
     sky.Init();
 
     // setup view and projection matrices
-    vec3 cam_pos(1.0f, 1.0f, 1.0f);
-    vec3 cam_look(0.0f, 0.0f, 0.0f);
-    vec3 cam_up(0.0f, 0.0f, 1.0f);
+    cam_pos = vec3(0.0f, 1.0f, 2.0f);
+    cam_look = vec3(0.0f, 0.0f, 0.0f);
+    cam_up = vec3(0.0f, 0.0f, -1.0f);
     view_matrix = lookAt(cam_pos, cam_look, cam_up);
-    view_matrix = translate(mat4(1.0f), vec3(0.0f, 0.0f, -4.0f));
+    //view_matrix = translate(mat4(1.0f), vec3(0.0f, 0.0f, -4.0f));
     float ratio = window_width / (float) window_height;
     projection_matrix = perspective(45.0f, ratio, 0.1f, 10.0f);
 
@@ -60,8 +66,9 @@ void Init(GLFWwindow* window) {
     glfwGetFramebufferSize(window, &window_width, &window_height);
     GLuint heightmap_tex_id = framebuffer.Init(tex_width, tex_width);
     terrain.Init(heightmap_tex_id);
-    //(OLD) water.Init(heightmap_tex_id, WATER);
-    water.Init(heightmap_tex_id);
+
+    GLuint mirror_tex_id = mirrorBuffer.Init(tex_width, tex_width);
+    water.Init(mirror_tex_id);
     heightmap.Init(tex_width, tex_width, heightmap_tex_id);
     heightmap.fBmExponentPrecompAndSet(1, 1.54);
 
@@ -82,13 +89,22 @@ void Init(GLFWwindow* window) {
 // gets called for every frame.
 void Display() {
     // render to window
+    mirrorBuffer.Bind();
+    {
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        //terrain.Draw(time, ????, ????, ????);
+    }
+    mirrorBuffer.Unbind();
+
     glViewport(0, 0, window_width, window_height);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     const float time = glfwGetTime();
     terrain.Draw(time, trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
     sky.Draw(trackball_matrix, view_matrix, projection_matrix);
-    //(OLD) water.Draw(time, trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
     water.Draw(time, trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
+    
+    //update the lookAt position
+    view_matrix = lookAt(cam_pos, cam_look, cam_up);
     
 }
 
@@ -232,6 +248,7 @@ int main(int argc, char *argv[]) {
     terrain.Cleanup();
     framebuffer.Cleanup();
     sky.Cleanup();
+    water.Cleanup();
 
     // close OpenGL window and terminate GLFW
     glfwDestroyWindow(window);
