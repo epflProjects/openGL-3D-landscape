@@ -21,7 +21,7 @@ private:
     }
   };
 
-  static const int MaxSnowFlakes = 100000;
+  const int MaxSnowFlakes = 100000;
   Snowflake SnowFlakesContainer[MaxSnowFlakes];
   int LastUsedSnowFlake = 0;
 
@@ -58,7 +58,7 @@ public:
       SnowFlakesContainer[i].cameradistance = -1.0f;
     }
 
-    // VBO
+    // VBO containing the 4 vertices of the snowflakes
     static const GLfloat g_vertex_buffer_data[] = {
         -0.5f, -0.5f, 0.0f, 0.05f, -0.5f, 0.0f,
         -0.5f, 0.5f,  0.0f, 0.5f,  0.5f,  0.0f,
@@ -82,6 +82,44 @@ public:
     glBindBuffer(GL_ARRAY_BUFFER, snowflakes_color_buffer);
     glBufferData(GL_ARRAY_BUFFER, MaxSnowFlakes * 4 * sizeof(GLubyte), NULL,
                  GL_STREAM_DRAW);
+
+     // Premier tampon d'attribut : sommets
+     glEnableVertexAttribArray(0);
+     glBindBuffer(GL_ARRAY_BUFFER, billboard_vertex_buffer);
+     glVertexAttribPointer(
+      0, // attribut. Aucune raison précise pour 0, mais cela doit correspondre à la disposition dans le shader.
+      3, // taille
+      GL_FLOAT, // type
+      GL_FALSE, // normalisé ?
+      0, // nombre d'octets séparant deux sommets dans le tampon
+      (void*)0 // décalage du tableau de tampon
+     );
+
+     // Second tampon d'attribut : position et centre des particules
+     glEnableVertexAttribArray(1);
+     glBindBuffer(GL_ARRAY_BUFFER, particles_position_buffer);
+     glVertexAttribPointer(
+      1, // attribut. Aucune raison précise pour 1, mais cela doit correspondre à la disposition dans le shader.
+      4, // taille : x + y + z + taille => 4
+      GL_FLOAT, // type
+      GL_FALSE, // normalisé ?
+      0, // nombre d'octets séparant deux sommets dans le tampon
+      (void*)0 // décalage du tableau de tampon
+     );
+
+     // 3e tampon d'attributs : couleurs des particules
+     glEnableVertexAttribArray(2);
+     glBindBuffer(GL_ARRAY_BUFFER, particles_color_buffer);
+     glVertexAttribPointer(
+      2, // attribut. Aucune raison précise pour 2, mais cela doit correspondre à la disposition dans le shader.
+      4, // taille : r + g + b + a => 4
+      GL_UNSIGNED_BYTE, // type
+      GL_TRUE, // normalisé ? *** OUI, cela signifie que le unsigned char[4] sera accessible avec un vec4 (float) dans le shader ***
+      0, // nombre d'octets séparant deux sommets dans le tampon
+      (void*)0 // décalage du tableau de tampon
+     );
+
+
   }
 
   void Draw() {
