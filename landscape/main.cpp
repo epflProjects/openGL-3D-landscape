@@ -35,6 +35,15 @@ mat4 view_matrix;
 mat4 trackball_matrix;
 mat4 old_trackball_matrix;
 
+vec3 cam_pos;
+vec3 cam_look;
+vec3 cam_up;
+
+float move_coeff = 0.05;
+bool FPS_mode = false;
+
+float total;
+
 float last_y;
 
 void Init(GLFWwindow* window) {
@@ -45,11 +54,10 @@ void Init(GLFWwindow* window) {
     snow.Init();
 
     // setup view and projection matrices
-    vec3 cam_pos(1.0f, 1.0f, 1.0f);
-    vec3 cam_look(0.0f, 0.0f, 0.0f);
-    vec3 cam_up(0.0f, 0.0f, 1.0f);
+    cam_pos = vec3(0.0f, 1.0f, 2.0f);
+    cam_look = vec3(0.0f, 0.0f, 0.0f);
+    cam_up = vec3(0.0f, 1.0f, 0.0f);
     view_matrix = lookAt(cam_pos, cam_look, cam_up);
-    view_matrix = translate(mat4(1.0f), vec3(0.0f, 0.0f, -4.0f));
     float ratio = window_width / (float) window_height;
     projection_matrix = perspective(45.0f, ratio, 0.1f, 10.0f);
 
@@ -89,6 +97,8 @@ void Display() {
     sky.Draw(trackball_matrix, view_matrix, projection_matrix);
     snow.Draw();
     water.Draw(time, trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
+    
+    view_matrix = lookAt(cam_pos, cam_look, cam_up);
 }
 
 // gets called when the windows/framebuffer is resized.
@@ -139,6 +149,50 @@ void MouseButton(GLFWwindow* window, int button, int action, int mod) {
     }
 }
 
+void dontExceedTerrainIfFPS() {
+    if(FPS_mode) {
+        if(cam_pos[0] > 1.0f) {
+            cam_pos[0] = 1.0f;
+        } else if (cam_pos[0] < -1.0f) {
+            cam_pos[0] = -1.0f;
+        }
+        if(cam_pos[2] > 1.0f) {
+            cam_pos[2] = 1.0f;
+        } else if (cam_pos[2] < -1.0f) {
+            cam_pos[2] = -1.0f;
+        }
+    }
+}
+
+void move(bool forward) {
+    float coeff = -1.0f;
+    if(forward) {
+        coeff = 1.0f;
+    }
+    total = abs(cam_look[0]-cam_pos[0]) + abs(cam_look[1]-cam_pos[1]) + abs(cam_look[2]-cam_pos[2]);
+    cam_pos[0] = cam_pos[0] + coeff * (((cam_look[0]-cam_pos[0])/total) * move_coeff);
+    cam_pos[2] = cam_pos[2] + coeff * (((cam_look[2]-cam_pos[2])/total) * move_coeff);
+    if(!FPS_mode) {
+        cam_pos[1] = cam_pos[1] + coeff * (((cam_look[1]-cam_pos[1])/total) * move_coeff);
+    } else {
+        dontExceedTerrainIfFPS();
+        // cam_pos[1] = height at (new) given point ;
+    }
+    cam_look[0] = cam_look[0] + coeff * (((cam_look[0]-cam_pos[0])/total) * move_coeff);
+    if(!FPS_mode) {
+        cam_look[1] = cam_look[1] + coeff * (((cam_look[1]-cam_pos[1])/total) * move_coeff);
+    }
+    cam_look[2] = cam_look[2] + coeff * (((cam_look[2]-cam_pos[2])/total) * move_coeff);
+}
+
+void moveForward() {
+    move(true);
+}
+
+void moveBackward() {
+    move(false);
+}
+
 void MousePos(GLFWwindow* window, double x, double y) {
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
         vec2 p = TransformScreenCoords(window, x, y);
@@ -150,9 +204,9 @@ void MousePos(GLFWwindow* window, double x, double y) {
     // zoom
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
         if (y > last_y) {
-          view_matrix[3][2] *= 1.01f;
+            moveBackward();
         } else {
-          view_matrix[3][2] /= 1.01f;
+            moveForward();
         }
     }
     last_y = y;
@@ -162,9 +216,57 @@ void ErrorCallback(int error, const char* description) {
     fputs(description, stderr);
 }
 
+void rotate2D(float position_0, float position_1, float& look0, float& look1, float angle, bool vertical) {
+    if(!vertical) {
+        look0 = position_0 + (look0 - position_0) * cos(angle) - (look1 - position_1) * sin(angle);
+    }
+    look1 = position_1 + (look0 - position_0) * sin(angle) + (look1 - position_1) * cos(angle);
+}
+
 void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, GL_TRUE);
+    }
+
+    switch(key) {
+        case 'W':
+            //Forward
+            moveForward();
+            break;
+        case 'S':
+            //Backward
+            moveBackward();
+            break;
+        case 'A':
+            //left
+            rotate2D(cam_pos[0], cam_pos[2], cam_look[0], cam_look[2], -0.05, false);
+            break;
+        case 'D':
+            //right
+            rotate2D(cam_pos[0], cam_pos[2], cam_look[0], cam_look[2], +0.05, false);
+            break;
+        case 'Q':
+            //up
+            rotate2D(0,0, cam_look[0], cam_look[1], -0.1f, true);
+            break;
+        case 'E':
+            //down
+            rotate2D(0,0, cam_look[0], cam_look[1], 0.1f, true);
+            break;
+        case 'F':
+            // only act on release
+            if(action != GLFW_RELEASE) {
+                return;
+            }
+            FPS_mode = !FPS_mode;
+            dontExceedTerrainIfFPS();
+            if(FPS_mode) {
+                //set cam height !
+                // cam_pos[1] = height at (new) given point ;
+            }
+            break;
+        default:
+            break;
     }
 }
 
@@ -197,7 +299,7 @@ int main(int argc, char *argv[]) {
     // makes the OpenGL context of window current on the calling thread
     glfwMakeContextCurrent(window);
 
-    // set the callback for escape key
+    // set the callback for escape key and camera movements
     glfwSetKeyCallback(window, KeyCallback);
 
     // set the framebuffer resize callback
