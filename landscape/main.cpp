@@ -243,11 +243,11 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
             break;
         case 'Q':
             //up
-            rotate2D(0,0, cam_look[0], cam_look[1], 0.1f, true);
+            rotate2D(0,0, cam_look[0], cam_look[1], -0.1f, true);
             break;
         case 'E':
             //down
-            rotate2D(0,0, cam_look[0], cam_look[1], -0.1f, true);
+            rotate2D(0,0, cam_look[0], cam_look[1], 0.1f, true);
             break;
         case 'F':
             // only act on release
