@@ -13,11 +13,13 @@
 #include "screenquad/screenquad.h"
 #include "trackball.h"
 #include "sky/sky.h"
+#include "particles/snow.h"
 
 Grid terrain;
 Grid water;
 Trackball trackball;
 Sky sky;
+Snow snow;
 
 int window_width = 800;
 int window_height = 600;
@@ -40,6 +42,7 @@ void Init(GLFWwindow* window) {
     glEnable(GL_DEPTH_TEST);
 
     sky.Init();
+    snow.Init();
 
     // setup view and projection matrices
     vec3 cam_pos(1.0f, 1.0f, 1.0f);
@@ -84,6 +87,7 @@ void Display() {
     const float time = glfwGetTime();
     terrain.Draw(time, trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
     sky.Draw(trackball_matrix, view_matrix, projection_matrix);
+    snow.Draw();
     water.Draw(time, trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
 }
 
