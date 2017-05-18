@@ -160,40 +160,33 @@ void dontExceedTerrainIfFPS() {
     }
 }
 
-void moveForward() {
+void move(bool forward) {
+    float coeff = -1.0f;
+    if(forward) {
+        coeff = 1.0f;
+    }
     total = abs(cam_look[0]-cam_pos[0]) + abs(cam_look[1]-cam_pos[1]) + abs(cam_look[2]-cam_pos[2]);
-    cam_pos[0] += ((cam_look[0]-cam_pos[0])/total) * move_coeff;
-    cam_pos[2] += ((cam_look[2]-cam_pos[2])/total) * move_coeff;
+    cam_pos[0] = cam_pos[0] + coeff * (((cam_look[0]-cam_pos[0])/total) * move_coeff);
+    cam_pos[2] = cam_pos[2] + coeff * (((cam_look[2]-cam_pos[2])/total) * move_coeff);
     if(!FPS_mode) {
-        cam_pos[1] += ((cam_look[1]-cam_pos[1])/total) * move_coeff;
+        cam_pos[1] = cam_pos[1] + coeff * (((cam_look[1]-cam_pos[1])/total) * move_coeff);
     } else {
         dontExceedTerrainIfFPS();
         // cam_pos[1] = height at (new) given point ;
     }
-    cam_look[0] += ((cam_look[0]-cam_pos[0])/total) * move_coeff;
+    cam_look[0] = cam_look[0] + coeff * (((cam_look[0]-cam_pos[0])/total) * move_coeff);
     if(!FPS_mode) {
-        cam_look[1] += ((cam_look[1]-cam_pos[1])/total) * move_coeff;
+        cam_look[1] = cam_look[1] + coeff * (((cam_look[1]-cam_pos[1])/total) * move_coeff);
     }
-    cam_look[2] += ((cam_look[2]-cam_pos[2])/total) * move_coeff;
+    cam_look[2] = cam_look[2] + coeff * (((cam_look[2]-cam_pos[2])/total) * move_coeff);
+}
+
+void moveForward() {
+    move(true);
 }
 
 void moveBackward() {
-    total = abs(cam_look[0]-cam_pos[0]) + abs(cam_look[1]-cam_pos[1]) + abs(cam_look[2]-cam_pos[2]);
-    cam_pos[0] -= ((cam_look[0]-cam_pos[0])/total) * move_coeff;
-    cam_pos[2] -= ((cam_look[2]-cam_pos[2])/total) * move_coeff;
-    if(!FPS_mode) {
-        cam_pos[1] -= ((cam_look[1]-cam_pos[1])/total) * move_coeff;
-    } else {
-        dontExceedTerrainIfFPS();
-        // cam_pos[1] = height at (new) given point ;
-    }
-
-    cam_look[0] -= ((cam_look[0]-cam_pos[0])/total) * move_coeff;
-    if(!FPS_mode) {
-        cam_look[1] -= ((cam_look[1]-cam_pos[1])/total) * move_coeff;
-    }
-    cam_look[2] -= ((cam_look[2]-cam_pos[2])/total) * move_coeff;
-    dontExceedTerrainIfFPS();
+    move(false);
 }
 
 void MousePos(GLFWwindow* window, double x, double y) {
@@ -250,11 +243,11 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
             break;
         case 'Q':
             //up
-            rotate2D(0,0, cam_look[0], cam_look[1], +0.1, true);
+            rotate2D(0,0, cam_look[0], cam_look[1], 0.1f, true);
             break;
         case 'E':
             //down
-            rotate2D(0,0, cam_look[0], cam_look[1], -0.1, true);
+            rotate2D(0,0, cam_look[0], cam_look[1], -0.1f, true);
             break;
         case 'F':
             // only act on release
