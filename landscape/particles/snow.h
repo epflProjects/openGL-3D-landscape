@@ -2,29 +2,37 @@
 #include "icg_helper.h"
 #include <glm/gtc/type_ptr.hpp>
 
+using namespace std;
+
+struct Snowflake {
+  glm::vec3 pos;
+  glm::vec3 speed;
+  unsigned char r, g, b, a; // COLOR
+  float size;
+  float angle;
+  float weight;
+  float life; // Remaining life of the particle. If <0: dead and unused.
+  float cameradistance; // Squared distance to the camera.
+
+  bool operator<(const Snowflake &that) const {
+    // Sort in reverse order : far particles drawn first.
+    return this->cameradistance > that.cameradistance;
+  }
+};
+
+static const int MaxSnowFlakes = 100000;
+static GLfloat *g_snowflake_position_size_data = new GLfloat[MaxSnowFlakes * 4];
+static GLubyte *g_snowflake_color_data = new GLubyte[MaxSnowFlakes * 4];
+Snowflake SnowFlakesContainer[MaxSnowFlakes];
+GLuint billboard_vertex_buffer;
+GLuint snowflakes_position_buffer;
+GLuint snowflakes_color_buffer;
+int SnowflakesCount;
+int LastUsedSnowFlake = 0;
+
 class Snow {
 
 private:
-  struct Snowflake {
-    glm::vec3 pos;
-    glm::vec3 speed;
-    unsigned char r, g, b, a; // COLOR
-    float size;
-    float angle;
-    float weight;
-    float life; // Remaining life of the particle. If <0: dead and unused.
-    float cameradistance; // Squared distance to the camera.
-
-    bool operator<(const Snow &that) const {
-      // Sort in reverse order : far particles drawn first.
-      return this->cameradistance > that.cameradistance;
-    }
-  };
-
-  const int MaxSnowFlakes = 100000;
-  Snowflake SnowFlakesContainer[MaxSnowFlakes];
-  int LastUsedSnowFlake = 0;
-
   // Finds a Snowflake in SnowFlakesContainer which isn't used yet.
   int FindUnusedSnowflake() {
     for (int i = LastUsedSnowFlake; i < MaxSnowFlakes; i++) {
@@ -42,16 +50,20 @@ private:
     return 0;
   }
 
-  void sortSnowFlakes() {
-    std::sort(&SnowFlakesContainer[0], &sortSnowFlakesContainer[MaxSnowFlakes]);
+  void sortSnowflakes() {
+    std::sort(&SnowFlakesContainer[0], &SnowFlakesContainer[MaxSnowFlakes]);
   }
 
 public:
-  static GLfoat *g_snowflake_position_size_data =
-      new GLfloat[MaxSnowFlakes * 4];
-  static GLubyte *g_snowflake_color_data = new GLubyte[MaxSnowFlakes * 4];
-  Init() {
-    GLuint program_id_ = LoadShaders("snow_vshader.glsl", "snow_fshader.glsl");
+  float snowCount = 0;
+
+  void Init() {
+    static GLfloat *g_snowflake_position_size_data =
+        new GLfloat[MaxSnowFlakes * 4];
+    static GLubyte *g_snowflake_color_data = new GLubyte[MaxSnowFlakes * 4];
+
+    GLuint program_id_ =
+        icg_helper::LoadShaders("snow_vshader.glsl", "snow_fshader.glsl");
 
     for (int i = 0; i < MaxSnowFlakes; i++) {
       SnowFlakesContainer[i].life = -1.0f;
@@ -71,7 +83,7 @@ public:
 
     // The VBO containing the positions and sizes of the particles
     GLuint snowflakes_position_buffer;
-    glGenBuffers(1, &particles_position_buffer);
+    glGenBuffers(1, &snowflakes_position_buffer);
     glBindBuffer(GL_ARRAY_BUFFER, snowflakes_position_buffer);
     glBufferData(GL_ARRAY_BUFFER, MaxSnowFlakes * 4 * sizeof(GLfloat), NULL,
                  GL_STREAM_DRAW);
@@ -82,53 +94,15 @@ public:
     glBindBuffer(GL_ARRAY_BUFFER, snowflakes_color_buffer);
     glBufferData(GL_ARRAY_BUFFER, MaxSnowFlakes * 4 * sizeof(GLubyte), NULL,
                  GL_STREAM_DRAW);
-
-     // Premier tampon d'attribut : sommets
-     glEnableVertexAttribArray(0);
-     glBindBuffer(GL_ARRAY_BUFFER, billboard_vertex_buffer);
-     glVertexAttribPointer(
-      0, // attribut. Aucune raison précise pour 0, mais cela doit correspondre à la disposition dans le shader.
-      3, // taille
-      GL_FLOAT, // type
-      GL_FALSE, // normalisé ?
-      0, // nombre d'octets séparant deux sommets dans le tampon
-      (void*)0 // décalage du tableau de tampon
-     );
-
-     // Second tampon d'attribut : position et centre des particules
-     glEnableVertexAttribArray(1);
-     glBindBuffer(GL_ARRAY_BUFFER, particles_position_buffer);
-     glVertexAttribPointer(
-      1, // attribut. Aucune raison précise pour 1, mais cela doit correspondre à la disposition dans le shader.
-      4, // taille : x + y + z + taille => 4
-      GL_FLOAT, // type
-      GL_FALSE, // normalisé ?
-      0, // nombre d'octets séparant deux sommets dans le tampon
-      (void*)0 // décalage du tableau de tampon
-     );
-
-     // 3e tampon d'attributs : couleurs des particules
-     glEnableVertexAttribArray(2);
-     glBindBuffer(GL_ARRAY_BUFFER, particles_color_buffer);
-     glVertexAttribPointer(
-      2, // attribut. Aucune raison précise pour 2, mais cela doit correspondre à la disposition dans le shader.
-      4, // taille : r + g + b + a => 4
-      GL_UNSIGNED_BYTE, // type
-      GL_TRUE, // normalisé ? *** OUI, cela signifie que le unsigned char[4] sera accessible avec un vec4 (float) dans le shader ***
-      0, // nombre d'octets séparant deux sommets dans le tampon
-      (void*)0 // décalage du tableau de tampon
-     );
-
-
   }
 
-  void Draw() {
-    // TODO compléter dans le main.cpp
-    double currentTime = glwGetTime();
-    double delta = currentTime - lastTime;
-    lastTime = currentTime;
+  void Draw(glm::vec3 cameraPos, glm::mat4 viewProjectionMatrix,
+            float deltaTime) {
+    // TODO je tente de mettre devant:
+    glm::vec3 CameraPosition = cameraPos;
+    glm::mat4 ViewProjectionMatrix = viewProjectionMatrix;
 
-    int newsnowflakes = (int)(delta * 10000.0);
+    int newsnowflakes = (int)(deltaTime * 10000.0);
     if (newsnowflakes > (int)(0.016f * 10000.0)) {
       newsnowflakes = (int)(0.016f * 10000.0);
     }
@@ -150,6 +124,20 @@ public:
 
       SnowFlakesContainer[snowflakeIndex].speed = maindir + randomdir * spread;
 
+      // // Uniform Spherical Distribution
+      // unsigned seed =
+      //     std::chrono::system_clock::now().time_since_epoch().count();
+      // std::mt19937 generator(seed);
+      // std::uniform_real_distribution<double> uniform01(0.0, 1.0);
+      // double theta = 2 * M_PI * uniform01(generator);
+      // double phi = acos(1 - 2 * uniform01(generator));
+      // double x = sin(phi) * cos(theta);
+      // double y = sin(phi) * sin(theta);
+      // double z = cos(phi);
+      // glm::vec3 USD(x, y, z);
+      // ParticlesContainer[particleIndex].speed = maindir + USD * spread;
+
+      // random color
       SnowFlakesContainer[snowflakeIndex].r = 0;
       SnowFlakesContainer[snowflakeIndex].g = 0;
       SnowFlakesContainer[snowflakeIndex].b = 0;
@@ -159,16 +147,17 @@ public:
           (rand() % 1000) / 2000.0f + 0.1f;
     }
 
+    // Simulate all particles
     int SnowflakesCount = 0;
     for (int i = 0; i < MaxSnowFlakes; i++) {
       Snowflake &s = SnowFlakesContainer[i];
 
       if (s.life > 0.0f) {
-        s.life -= delta;
+        s.life -= deltaTime;
         if (s.life > 0.0f) {
-          s.speed += glm::vec3(0.0f, -9.81f, 0.0f) * (float)delta * 0.5f;
-          s.pos += s.speed * (float)delta;
-          s.cameradistance = glm::length2(s.pos - CameraPosition);
+          s.speed += glm::vec3(0.0f, -9.81f, 0.0f) * (float)deltaTime * 0.5f;
+          s.pos += s.speed * (float)deltaTime;
+          s.cameradistance = glm::length(s.pos - CameraPosition);
 
           g_snowflake_position_size_data[4 * SnowflakesCount + 0] = s.pos.x;
           g_snowflake_position_size_data[4 * SnowflakesCount + 1] = s.pos.y;
@@ -179,12 +168,99 @@ public:
           g_snowflake_color_data[4 * SnowflakesCount + 1] = s.g;
           g_snowflake_color_data[4 * SnowflakesCount + 2] = s.b;
           g_snowflake_color_data[4 * SnowflakesCount + 3] = s.a;
+
         } else {
-          p.cameradistance = -1.0f;
+          // Dead particles to sort buffer
+          s.cameradistance = -1.0f;
         }
+
         SnowflakesCount++;
       }
     }
-    sortSnowFlakes();
+
+    sortSnowflakes();
+
+    snowCount = SnowflakesCount;
+
+    // Mise à jour des tampons qu'OpenGL utilise pour le rendu.
+    // Il y a des façons bien plus sophistiquées pour envoyer des données du
+    // CPU au GPU, mais c'est en dehors du champ de ce tutoriel.
+    // http://www.opengl.org/wiki/Buffer_Object_Streaming
+
+    glBindBuffer(GL_ARRAY_BUFFER, snowflakes_position_buffer);
+    glBufferData(GL_ARRAY_BUFFER, MaxSnowFlakes * 4 * sizeof(GLfloat), NULL,
+                 GL_STREAM_DRAW); // Tampon orphelin, une méthode commune pour
+                                  // améliorer les performances de streaming.
+                                  // Voir le lien ci-dessus pour plus de
+                                  // détails.
+    glBufferSubData(GL_ARRAY_BUFFER, 0, SnowflakesCount * sizeof(GLfloat) * 4,
+                    g_snowflake_position_size_data);
+
+    glBindBuffer(GL_ARRAY_BUFFER, snowflakes_color_buffer);
+    glBufferData(GL_ARRAY_BUFFER, MaxSnowFlakes * 4 * sizeof(GLubyte), NULL,
+                 GL_STREAM_DRAW); // Tampon orphelin, une méthode commune pour
+                                  // améliorer les performances de streaming.
+                                  // Voir le lien ci-dessus pour plus de
+                                  // détails.
+    glBufferSubData(GL_ARRAY_BUFFER, 0, SnowflakesCount * sizeof(GLubyte) * 4,
+                    g_snowflake_color_data);
+
+    // Premier tampon d'attribut : sommets
+    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, billboard_vertex_buffer);
+    glVertexAttribPointer(
+        0,        // attribut. Aucune raison précise pour 0, mais cela doit
+                  // correspondre à la disposition dans le shader.
+        3,        // taille
+        GL_FLOAT, // type
+        GL_FALSE, // normalisé ?
+        0,        // nombre d'octets séparant deux sommets dans le tampon
+        (void *)0 // décalage du tableau de tampon
+        );
+
+    // Second tampon d'attribut : position et centre des particules
+    glEnableVertexAttribArray(1);
+    glBindBuffer(GL_ARRAY_BUFFER, snowflakes_position_buffer);
+    glVertexAttribPointer(
+        1,        // attribut. Aucune raison précise pour 1, mais cela doit
+                  // correspondre à la disposition dans le shader.
+        4,        // taille : x + y + z + taille => 4
+        GL_FLOAT, // type
+        GL_FALSE, // normalisé ?
+        0,        // nombre d'octets séparant deux sommets dans le tampon
+        (void *)0 // décalage du tableau de tampon
+        );
+
+    // 3e tampon d'attributs : couleurs des particules
+    glEnableVertexAttribArray(2);
+    glBindBuffer(GL_ARRAY_BUFFER, snowflakes_color_buffer);
+    glVertexAttribPointer(
+        2, // attribut. Aucune raison précise pour 2, mais cela doit
+           // correspondre à la disposition dans le shader.
+        4, // taille : r + g + b + a => 4
+        GL_UNSIGNED_BYTE, // type
+        GL_TRUE,  // normalisé ? *** OUI, cela signifie que le unsigned char[4]
+                  // sera accessible avec un vec4 (float) dans le shader ***
+        0,        // nombre d'octets séparant deux sommets dans le tampon
+        (void *)0 // décalage du tableau de tampon
+        );
+
+    glVertexAttribDivisor(
+        0, 0); // particles vertices : always reuse the same 4 vertices -> 0
+    glVertexAttribDivisor(1, 1); // positions : one per quad (its center) -> 1
+    glVertexAttribDivisor(2, 1); // color : one per quad -> 1
+
+    glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, SnowflakesCount);
+
+    glDisableVertexAttribArray(0);
+    glDisableVertexAttribArray(1);
+    glDisableVertexAttribArray(2);
   }
-}
+
+  void Cleanup() {
+    glDeleteBuffers(1, &snowflakes_color_buffer);
+    glDeleteBuffers(1, &snowflakes_position_buffer);
+    glDeleteBuffers(1, &billboard_vertex_buffer);
+    delete[] g_snowflake_position_size_data;
+  }
+};
