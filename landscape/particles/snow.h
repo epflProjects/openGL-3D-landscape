@@ -138,10 +138,10 @@ public:
       // ParticlesContainer[particleIndex].speed = maindir + USD * spread;
 
       // random color
-      SnowFlakesContainer[snowflakeIndex].r = 0;
-      SnowFlakesContainer[snowflakeIndex].g = 0;
-      SnowFlakesContainer[snowflakeIndex].b = 0;
-      SnowFlakesContainer[snowflakeIndex].a = (rand() % 256) / 3;
+      SnowFlakesContainer[snowflakeIndex].r = 200;
+      SnowFlakesContainer[snowflakeIndex].g = 200;
+      SnowFlakesContainer[snowflakeIndex].b = 200;
+      SnowFlakesContainer[snowflakeIndex].a = 1.0;
 
       SnowFlakesContainer[snowflakeIndex].size =
           (rand() % 1000) / 2000.0f + 0.1f;
