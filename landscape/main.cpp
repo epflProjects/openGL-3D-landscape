@@ -37,7 +37,10 @@ vec3 cam_pos;
 vec3 cam_look;
 vec3 cam_up;
 
-float view_matrix_3_2;
+float move_coeff = 0.05;
+bool FPS_mode = false;
+
+float total;
 
 float last_y;
 
@@ -50,10 +53,8 @@ void Init(GLFWwindow* window) {
     // setup view and projection matrices
     cam_pos = vec3(0.0f, 1.0f, 2.0f);
     cam_look = vec3(0.0f, 0.0f, 0.0f);
-    cam_up = vec3(0.0f, 0.0f, -1.0f);
+    cam_up = vec3(0.0f, 1.0f, 0.0f);
     view_matrix = lookAt(cam_pos, cam_look, cam_up);
-   // view_matrix = translate(mat4(1.0f), vec3(0.0f, 0.0f, -4.0f));
-    view_matrix_3_2 = view_matrix[3][2];
     float ratio = window_width / (float) window_height;
     projection_matrix = perspective(45.0f, ratio, 0.1f, 10.0f);
 
@@ -77,8 +78,6 @@ void Init(GLFWwindow* window) {
         heightmap.Draw();
     }
     framebuffer.Unbind();
-    cout << window_height << endl;
-    cout << window_width << endl;
 
     //enable transparency
     glEnable (GL_BLEND); 
@@ -94,11 +93,8 @@ void Display() {
     terrain.Draw(time, trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
     sky.Draw(trackball_matrix, view_matrix, projection_matrix);
     water.Draw(time, trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
-
-    cout << "display" << cam_look[2] << endl;
+    
     view_matrix = lookAt(cam_pos, cam_look, cam_up);
-    //view_matrix = translate(mat4(1.0f), vec3(0.0f, 0.0f, -4.0f));
-    view_matrix[3][2] = view_matrix_3_2;
 }
 
 // gets called when the windows/framebuffer is resized.
@@ -149,6 +145,57 @@ void MouseButton(GLFWwindow* window, int button, int action, int mod) {
     }
 }
 
+void dontExceedTerrainIfFPS() {
+    if(FPS_mode) {
+        if(cam_pos[0] > 1.0f) {
+            cam_pos[0] = 1.0f;
+        } else if (cam_pos[0] < -1.0f) {
+            cam_pos[0] = -1.0f;
+        }
+        if(cam_pos[2] > 1.0f) {
+            cam_pos[2] = 1.0f;
+        } else if (cam_pos[2] < -1.0f) {
+            cam_pos[2] = -1.0f;
+        }
+    }
+}
+
+void moveForward() {
+    total = abs(cam_look[0]-cam_pos[0]) + abs(cam_look[1]-cam_pos[1]) + abs(cam_look[2]-cam_pos[2]);
+    cam_pos[0] += ((cam_look[0]-cam_pos[0])/total) * move_coeff;
+    cam_pos[2] += ((cam_look[2]-cam_pos[2])/total) * move_coeff;
+    if(!FPS_mode) {
+        cam_pos[1] += ((cam_look[1]-cam_pos[1])/total) * move_coeff;
+    } else {
+        dontExceedTerrainIfFPS();
+        // cam_pos[1] = height at (new) given point ;
+    }
+    cam_look[0] += ((cam_look[0]-cam_pos[0])/total) * move_coeff;
+    if(!FPS_mode) {
+        cam_look[1] += ((cam_look[1]-cam_pos[1])/total) * move_coeff;
+    }
+    cam_look[2] += ((cam_look[2]-cam_pos[2])/total) * move_coeff;
+}
+
+void moveBackward() {
+    total = abs(cam_look[0]-cam_pos[0]) + abs(cam_look[1]-cam_pos[1]) + abs(cam_look[2]-cam_pos[2]);
+    cam_pos[0] -= ((cam_look[0]-cam_pos[0])/total) * move_coeff;
+    cam_pos[2] -= ((cam_look[2]-cam_pos[2])/total) * move_coeff;
+    if(!FPS_mode) {
+        cam_pos[1] -= ((cam_look[1]-cam_pos[1])/total) * move_coeff;
+    } else {
+        dontExceedTerrainIfFPS();
+        // cam_pos[1] = height at (new) given point ;
+    }
+
+    cam_look[0] -= ((cam_look[0]-cam_pos[0])/total) * move_coeff;
+    if(!FPS_mode) {
+        cam_look[1] -= ((cam_look[1]-cam_pos[1])/total) * move_coeff;
+    }
+    cam_look[2] -= ((cam_look[2]-cam_pos[2])/total) * move_coeff;
+    dontExceedTerrainIfFPS();
+}
+
 void MousePos(GLFWwindow* window, double x, double y) {
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
         vec2 p = TransformScreenCoords(window, x, y);
@@ -160,11 +207,9 @@ void MousePos(GLFWwindow* window, double x, double y) {
     // zoom
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
         if (y > last_y) {
-            view_matrix[3][2] *= 1.01f;
-            view_matrix_3_2 = view_matrix[3][2];
+            moveBackward();
         } else {
-            view_matrix[3][2] /= 1.01f;
-            view_matrix_3_2 = view_matrix[3][2];
+            moveForward();
         }
     }
     last_y = y;
@@ -174,6 +219,13 @@ void ErrorCallback(int error, const char* description) {
     fputs(description, stderr);
 }
 
+void rotate2D(float position_0, float position_1, float& look0, float& look1, float angle, bool vertical) {
+    if(!vertical) {
+        look0 = position_0 + (look0 - position_0) * cos(angle) - (look1 - position_1) * sin(angle);
+    }
+    look1 = position_1 + (look0 - position_0) * sin(angle) + (look1 - position_1) * cos(angle);
+}
+
 void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, GL_TRUE);
@@ -181,34 +233,40 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 
     switch(key) {
         case 'W':
-            cout << "W : forward" << endl;
-            view_matrix[3][2] += 0.05f;
-            view_matrix_3_2 = view_matrix[3][2];
+            //Forward
+            moveForward();
             break;
         case 'S':
-            cout << "S : backward" << endl;
-            view_matrix[3][2] -= 0.05f;
-            view_matrix_3_2 = view_matrix[3][2];
+            //Backward
+            moveBackward();
             break;
         case 'A':
-            cout << "A : bow up" << endl;
-            // trackball_matrix = rotate(mat4(1.0f), 0.05f, vec3(1.0f, 0.0f, 0.0f)) * old_trackball_matrix;
-            // old_trackball_matrix = trackball_matrix;
-            cam_pos[1] += 0.1f;
+            //left
+            rotate2D(cam_pos[0], cam_pos[2], cam_look[0], cam_look[2], -0.05, false);
             break;
         case 'D':
-            cout << "D : bow down" << endl;
-            // trackball_matrix = rotate(mat4(1.0f), -0.05f, vec3(1.0f, 0.0f, 0.0f)) * old_trackball_matrix;
-            // old_trackball_matrix = trackball_matrix;
-            cam_up[1] += 0.1f;
+            //right
+            rotate2D(cam_pos[0], cam_pos[2], cam_look[0], cam_look[2], +0.05, false);
             break;
         case 'Q':
-            cout << "Q : up" << endl;
-
+            //up
+            rotate2D(0,0, cam_look[0], cam_look[1], +0.1, true);
             break;
         case 'E':
-            cout << "E : down" << endl;
-            view_matrix[2][2] /= 1.05f;
+            //down
+            rotate2D(0,0, cam_look[0], cam_look[1], -0.1, true);
+            break;
+        case 'F':
+            // only act on release
+            if(action != GLFW_RELEASE) {
+                return;
+            }
+            FPS_mode = !FPS_mode;
+            dontExceedTerrainIfFPS();
+            if(FPS_mode) {
+                //set cam height !
+                // cam_pos[1] = height at (new) given point ;
+            }
             break;
         default:
             break;
