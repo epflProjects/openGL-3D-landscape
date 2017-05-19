@@ -14,6 +14,9 @@
 #include "trackball.h"
 #include "sky/sky.h"
 
+//for memset (yes I'm an old fashioned C programmer, get over it.)
+#include <string.h>
+
 Grid terrain;
 Grid water;
 Trackball trackball;
@@ -43,6 +46,55 @@ bool FPS_mode = false;
 float total;
 
 float last_y;
+
+GLfloat heightmap_data[tex_width * tex_width];
+
+
+//debug function, to fflush the error queue to be sure the next error recieved afetr this is the one from the function trialed.
+void flushErrorQueue(){
+    GLenum err;
+    while((err = glGetError()) != GL_NO_ERROR);
+}
+//debug function, to print what error is in the head of of the error queue
+void displayErrEnum(){
+    string errEnum;
+    switch(glGetError()){
+        case GL_NO_ERROR:
+            errEnum = "GL_NO_ERROR";
+            break;
+        case GL_INVALID_ENUM:
+            errEnum = "GL_INVALID_ENUM";
+            break;
+        case GL_INVALID_VALUE:
+            errEnum = "GL_INVALID_VALUE";
+            break;
+        case GL_INVALID_OPERATION:
+            errEnum = "GL_INVALID_OPERATION";
+            break;
+        case GL_STACK_OVERFLOW:
+            errEnum = "GL_STACK_OVERFLOW";
+            break;
+        case GL_STACK_UNDERFLOW:
+            errEnum = "GL_STACK_UNDERFLOW";
+            break;
+        case GL_OUT_OF_MEMORY:
+            errEnum = "GL_OUT_OF_MEMORY";
+            break;
+        case GL_INVALID_FRAMEBUFFER_OPERATION:
+            errEnum = "GL_INVALID_FRAMEBUFFER_OPERATION";
+            break;
+        case GL_CONTEXT_LOST:
+            errEnum = "GL_CONTEXT_LOST";
+            break;
+        case GL_TABLE_TOO_LARGE:
+            errEnum = "GL_TABLE_TOO_LARGE";
+            break;
+        default:
+            errEnum = "unknown error";
+            break;
+    } 
+    cout << errEnum;
+}
 
 void Init(GLFWwindow* window) {
     glClearColor(0.0, 0.0, 0.0 /*black*/, 1.0 /*solid*/);
@@ -76,9 +128,19 @@ void Init(GLFWwindow* window) {
         glViewport(0,0,tex_width,tex_width);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         heightmap.Draw();
+        memset(heightmap_data, (float) 0, tex_width*tex_width);
+        //stocking the result of the heightmap to a global array, in order to read height values
+        flushErrorQueue();
+        glReadPixels(0, tex_width, tex_width, tex_width, GL_RED, GL_FLOAT, heightmap_data);
+        cout << "error is : ";
+        displayErrEnum();
+        cout << endl;
+        
+
     }
     framebuffer.Unbind();
 
+    cout << "test of Read pixels : " << heightmap_data[2] << " and "<< heightmap_data[7] << endl;
     //enable transparency
     glEnable (GL_BLEND); 
     glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
