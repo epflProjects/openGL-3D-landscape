@@ -47,6 +47,7 @@ float total;
 
 float last_y;
 
+//to store globally the height of the terrain.
 GLfloat heightmap_data[tex_width * tex_width];
 
 
@@ -105,15 +106,23 @@ void framebufferHMRender(){
         heightmap.Draw();
         memset(heightmap_data, (float) 0, tex_width*tex_width);
         //stocking the result of the heightmap to a global array, in order to read height values
-        flushErrorQueue();
-        GLfloat readed = 0.0f;
         glReadPixels(0, 0, tex_width, tex_width, GL_RED, GL_FLOAT, heightmap_data);
 
     }
     framebuffer.Unbind();
 }
 
+//return the height of the terrain according to the x and y coordinates given as parameters.
+float getHeight(float x, float y, int terrain_w){
+    if(abs(x) > 1.0f || abs(y) > 1.0f){
+        return 0.0f;
+    }
+    int center = terrain_w/2;
+    int newX = (x + 1.0f) * center;
+    int newY = (y + 1.0f) * center;
+    return heightmap_data[newX * terrain_w + newY];
 
+}
 
 void Init(GLFWwindow* window) {
     glClearColor(0.0, 0.0, 0.0 /*black*/, 1.0 /*solid*/);
@@ -143,7 +152,7 @@ void Init(GLFWwindow* window) {
 
     framebufferHMRender();
 
-    cout << "test of Read pixels : " << heightmap_data[(tex_width - 1) * (tex_width - 1)] << " and "<< heightmap_data[1] << endl;
+    //cout << "test of Read pixels : " << heightmap_data[(tex_width - 1) * (tex_width - 1)] << " and "<< heightmap_data[1] << endl;
     //enable transparency
     glEnable (GL_BLEND); 
     glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
