@@ -96,6 +96,25 @@ void displayErrEnum(){
     cout << errEnum;
 }
 
+void framebufferHMRender(){
+    // render to framebuffer
+    framebuffer.Bind();
+    {   
+        glViewport(0,0,tex_width,tex_width);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        heightmap.Draw();
+        memset(heightmap_data, (float) 0, tex_width*tex_width);
+        //stocking the result of the heightmap to a global array, in order to read height values
+        flushErrorQueue();
+        GLfloat readed = 0.0f;
+        glReadPixels(0, 0, tex_width, tex_width, GL_RED, GL_FLOAT, heightmap_data);
+
+    }
+    framebuffer.Unbind();
+}
+
+
+
 void Init(GLFWwindow* window) {
     glClearColor(0.0, 0.0, 0.0 /*black*/, 1.0 /*solid*/);
     glEnable(GL_DEPTH_TEST);
@@ -122,29 +141,14 @@ void Init(GLFWwindow* window) {
     heightmap.Init(tex_width, tex_width, heightmap_tex_id);
     heightmap.fBmExponentPrecompAndSet(1, 1.54);
 
-    // render to framebuffer
-    framebuffer.Bind();
-    {   
-        glViewport(0,0,tex_width,tex_width);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        heightmap.Draw();
-        memset(heightmap_data, (float) 0, tex_width*tex_width);
-        //stocking the result of the heightmap to a global array, in order to read height values
-        flushErrorQueue();
-        glReadPixels(0, tex_width, tex_width, tex_width, GL_RED, GL_FLOAT, heightmap_data);
-        cout << "error is : ";
-        displayErrEnum();
-        cout << endl;
-        
+    framebufferHMRender();
 
-    }
-    framebuffer.Unbind();
-
-    cout << "test of Read pixels : " << heightmap_data[2] << " and "<< heightmap_data[7] << endl;
+    cout << "test of Read pixels : " << heightmap_data[(tex_width - 1) * (tex_width - 1)] << " and "<< heightmap_data[1] << endl;
     //enable transparency
     glEnable (GL_BLEND); 
     glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
+
 
 // gets called for every frame.
 void Display() {
@@ -175,14 +179,7 @@ void ResizeCallback(GLFWwindow* window, int width, int height) {
     framebuffer.Init(tex_width, tex_width);
 
     // render to framebuffer
-    framebuffer.Bind();
-    {   
-        glViewport(0,0,tex_width,tex_width);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        heightmap.Draw();
-    }
-    framebuffer.Unbind();
-
+    framebufferHMRender();
 }
 
 // transforms glfw screen coordinates into normalized OpenGL coordinates.
