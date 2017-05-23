@@ -96,6 +96,7 @@ void Display() {
         vec3 mirrored_cam_pos(cam_pos.x, cam_pos.y, /*-*/cam_pos.z);
         mat4 mirrored_view = lookAt(mirrored_cam_pos, cam_look, cam_down);
         mat4 mirrored_proj = scale(projection_matrix, vec3(-1.0f, 1.0f, 1.0f));
+ 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         terrain.Draw(time, trackball_matrix * IDENTITY_MATRIX, mirrored_view, mirrored_proj);
     }
@@ -105,7 +106,7 @@ void Display() {
     glViewport(0, 0, window_width, window_height);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     terrain.Draw(time, trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
-    sky.Draw(trackball_matrix, view_matrix, projection_matrix);
+    //sky.Draw(trackball_matrix, view_matrix, projection_matrix);
     water.Draw(time, trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
     
     //update the lookAt position

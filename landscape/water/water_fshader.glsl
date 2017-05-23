@@ -5,6 +5,8 @@ in vec4 vpoint_mv;
 in vec3 light_dir;
 in float height;
 
+in vec4 gl_FragCoord;
+
 out vec4 color;
 
 uniform sampler2D tex_mirror;
@@ -14,5 +16,17 @@ vec3 hexToFloatColor(vec3 hex){
 }
 
 void main() {
-    color = vec4(hexToFloatColor(vec3(104,128,156)), 0.7f);
+	    //Querying the inverted View's height and width.
+    vec2 window_dims = textureSize(tex_mirror, 0);
+    float window_width = window_dims.x;
+    float window_height = window_dims.y;
+
+    //we need to adapt the view's mirrored coordinate to the ones of the water textures, to avoid distorsion in the floor.
+    float _u = gl_FragCoord.x / window_width;
+
+    float _v = gl_FragCoord.y / window_height;
+
+
+    //color = vec4(hexToFloatColor(vec3(104,128,156)), 0.7f);
+    color = mix(hexToFloatColor(vec3(104,128,156)), texture(tex_mirror, vec2(_u,_v)), vec3(.15))
 }
