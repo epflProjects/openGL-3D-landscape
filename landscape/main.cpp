@@ -47,7 +47,7 @@ float total;
 
 float last_y;
 
-float petite_marge = 0.02f;
+float petite_marge = 0.0f;
 
 //to store globally the height of the terrain.
 GLfloat heightmap_data[tex_width * tex_width];
@@ -103,7 +103,7 @@ void framebufferHMRender(){
     // render to framebuffer
     framebuffer.Bind();
     {   
-        glViewport(0,0,tex_width,tex_width);
+        glViewport(0,0,tex_width, tex_width);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         heightmap.Draw();
         memset(heightmap_data, (float) 0, tex_width*tex_width);
@@ -120,8 +120,8 @@ float getHeight(float x, float y, int terrain_w){
         return 0.0f;
     }
     int center = terrain_w/2;
-    int newX = (x + 1.0f) * center;
-    int newY = (y + 1.0f) * center;
+    int newY = (x + 1.0f) * center;
+    int newX = (-y + 1.0f) * center;
     return heightmap_data[newX * terrain_w + newY];
 
 }
