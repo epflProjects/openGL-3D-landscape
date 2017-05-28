@@ -47,7 +47,7 @@ float total;
 
 float last_y;
 
-float petite_marge = 0.02f;
+float margin = 0.05f;
 
 //to store globally the height of the terrain.
 GLfloat heightmap_data[tex_width * tex_width];
@@ -122,8 +122,8 @@ float getHeight(float x, float y, int terrain_w){
     int center = terrain_w/2;
     int newX = (x + 1.0f) * center;
     int newY = (y + 1.0f) * center;
-    return heightmap_data[newX * terrain_w + newY];
 
+    return heightmap_data[newX * terrain_w + newY];
 }
 
 void Init(GLFWwindow* window) {
@@ -242,7 +242,7 @@ void move(bool forward) {
         cam_pos[1] = cam_pos[1] + coeff * (((cam_look[1]-cam_pos[1])/total) * move_coeff);
     } else {
         dontExceedTerrainIfFPS();
-        cam_pos[1] = getHeight(cam_pos[0], cam_pos[2], tex_width) + petite_marge;
+        cam_pos[1] = getHeight(cam_pos[0], cam_pos[2], tex_width) + margin;
     }
     cam_look[0] = cam_look[0] + coeff * (((cam_look[0]-cam_pos[0])/total) * move_coeff);
     if(!FPS_mode) {
@@ -297,27 +297,51 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
     switch(key) {
         case 'W':
             //Forward
-            moveForward();
+            if(action == GLFW_RELEASE) {
+                moveForward();
+            } else {
+                moveForward();
+            }
             break;
         case 'S':
             //Backward
-            moveBackward();
+            if(action == GLFW_RELEASE) {
+                moveBackward();
+            } else {
+                moveBackward();
+            }
             break;
         case 'A':
             //left
-            rotate2D(cam_pos[0], cam_pos[2], cam_look[0], cam_look[2], -0.05, false);
+            if(action == GLFW_RELEASE) {
+                rotate2D(cam_pos[0], cam_pos[2], cam_look[0], cam_look[2], -0.05, false);
+            } else {
+                rotate2D(cam_pos[0], cam_pos[2], cam_look[0], cam_look[2], -0.05, false);
+            }
             break;
         case 'D':
             //right
-            rotate2D(cam_pos[0], cam_pos[2], cam_look[0], cam_look[2], +0.05, false);
+            if(action == GLFW_RELEASE) {
+                rotate2D(cam_pos[0], cam_pos[2], cam_look[0], cam_look[2], +0.05, false);
+            } else {
+                rotate2D(cam_pos[0], cam_pos[2], cam_look[0], cam_look[2], +0.05, false);
+            }
             break;
         case 'Q':
             //up
-            rotate2D(0,0, cam_look[0], cam_look[1], -0.1f, true);
+            if(action == GLFW_RELEASE) {
+                rotate2D(0,0, cam_look[0], cam_look[1], -0.1f, true);
+            } else {
+                rotate2D(0,0, cam_look[0], cam_look[1], -0.1f, true);
+            }
             break;
         case 'E':
             //down
-            rotate2D(0,0, cam_look[0], cam_look[1], 0.1f, true);
+            if(action == GLFW_RELEASE) {
+                rotate2D(0,0, cam_look[0], cam_look[1], 0.1f, true);
+            } else {
+                rotate2D(0,0, cam_look[0], cam_look[1], 0.1f, true);
+            }
             break;
         case 'F':
             // only act on release
@@ -328,7 +352,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
             dontExceedTerrainIfFPS();
             if(FPS_mode) {
                 //set cam height !
-                cam_pos[1] = getHeight(cam_pos[0], cam_pos[2], tex_width) + petite_marge;
+                cam_pos[1] = getHeight(cam_pos[0], cam_pos[2], tex_width) + margin;
             }
             break;
         default:
