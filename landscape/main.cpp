@@ -15,6 +15,9 @@
 #include "sky/sky.h"
 #include "water/water.h"
 
+//for memset (yes I'm an old fashioned C programmer, get over it.)
+#include <string.h>
+
 Grid terrain;
 Water water;
 Trackball trackball;
@@ -39,7 +42,91 @@ vec3 cam_pos;
 vec3 cam_look;
 vec3 cam_up;
 
+float move_coeff = 0.005;
+bool FPS_mode = false;
+
+float total;
+
 float last_y;
+
+float margin = 0.08f;
+float FPS_coeff = 2.5f;
+
+//to store globally the height of the terrain.
+GLfloat heightmap_data[tex_width * tex_width];
+
+
+//debug function, to fflush the error queue to be sure the next error recieved afetr this is the one from the function trialed.
+void flushErrorQueue(){
+    GLenum err;
+    while((err = glGetError()) != GL_NO_ERROR);
+}
+//debug function, to print what error is in the head of of the error queue
+void displayErrEnum(){
+    string errEnum;
+    switch(glGetError()){
+        case GL_NO_ERROR:
+            errEnum = "GL_NO_ERROR";
+            break;
+        case GL_INVALID_ENUM:
+            errEnum = "GL_INVALID_ENUM";
+            break;
+        case GL_INVALID_VALUE:
+            errEnum = "GL_INVALID_VALUE";
+            break;
+        case GL_INVALID_OPERATION:
+            errEnum = "GL_INVALID_OPERATION";
+            break;
+        case GL_STACK_OVERFLOW:
+            errEnum = "GL_STACK_OVERFLOW";
+            break;
+        case GL_STACK_UNDERFLOW:
+            errEnum = "GL_STACK_UNDERFLOW";
+            break;
+        case GL_OUT_OF_MEMORY:
+            errEnum = "GL_OUT_OF_MEMORY";
+            break;
+        case GL_INVALID_FRAMEBUFFER_OPERATION:
+            errEnum = "GL_INVALID_FRAMEBUFFER_OPERATION";
+            break;
+        case GL_CONTEXT_LOST:
+            errEnum = "GL_CONTEXT_LOST";
+            break;
+        case GL_TABLE_TOO_LARGE:
+            errEnum = "GL_TABLE_TOO_LARGE";
+            break;
+        default:
+            errEnum = "unknown error";
+            break;
+    } 
+    cout << errEnum;
+}
+
+void framebufferHMRender(){
+    // render to framebuffer
+    framebuffer.Bind();
+    {   
+        glViewport(0,0,tex_width, tex_width);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        heightmap.Draw();
+        memset(heightmap_data, (float) 0, tex_width*tex_width);
+        //stocking the result of the heightmap to a global array, in order to read height values
+        glReadPixels(0, 0, tex_width, tex_width, GL_RED, GL_FLOAT, heightmap_data);
+
+    }
+    framebuffer.Unbind();
+}
+
+//return the height of the terrain according to the x and y coordinates given as parameters.
+float getHeight(float x, float y, int terrain_w){
+    if(abs(x) > 1.0f || abs(y) > 1.0f){
+        return 0.0f;
+    }
+    int center = terrain_w/2;
+    int newY = (x + 1.0f) * center;
+    int newX = (-y + 1.0f) * center;
+    return heightmap_data[newX * terrain_w + newY];
+}
 
 void Init(GLFWwindow* window) {
     glClearColor(0.0, 0.0, 0.0 /*black*/, 1.0 /*solid*/);
@@ -52,9 +139,8 @@ void Init(GLFWwindow* window) {
     // setup view and projection matrices
     cam_pos = vec3(0.0f, 1.0f, 2.0f);
     cam_look = vec3(0.0f, 0.0f, 0.0f);
-    cam_up = vec3(0.0f, 0.0f, -1.0f);
+    cam_up = vec3(0.0f, 1.0f, 0.0f);
     view_matrix = lookAt(cam_pos, cam_look, cam_up);
-    //view_matrix = translate(mat4(1.0f), vec3(0.0f, 0.0f, -4.0f));
     float ratio = window_width / (float) window_height;
     projection_matrix = perspective(45.0f, ratio, 0.1f, 10.0f);
 
@@ -72,19 +158,14 @@ void Init(GLFWwindow* window) {
     heightmap.Init(tex_width, tex_width, heightmap_tex_id);
     heightmap.fBmExponentPrecompAndSet(1, 1.54);
 
-    // render to framebuffer
-    framebuffer.Bind();
-    {   
-        glViewport(0,0,tex_width,tex_width);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        heightmap.Draw();
-    }
-    framebuffer.Unbind();
+    framebufferHMRender();
 
+    //cout << "test of Read pixels : " << heightmap_data[(tex_width - 1) * (tex_width - 1)] << " and "<< heightmap_data[1] << endl;
     //enable transparency
     glEnable (GL_BLEND); 
     glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
+
 
 // gets called for every frame.
 void Display() {
@@ -112,7 +193,6 @@ void Display() {
     
     //update the lookAt position
     view_matrix = lookAt(cam_pos, cam_look, cam_up);
-    
 }
 
 // gets called when the windows/framebuffer is resized.
@@ -131,14 +211,7 @@ void ResizeCallback(GLFWwindow* window, int width, int height) {
     framebuffer.Init(tex_width, tex_width);
 
     // render to framebuffer
-    framebuffer.Bind();
-    {   
-        glViewport(0,0,tex_width,tex_width);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        heightmap.Draw();
-    }
-    framebuffer.Unbind();
-
+    framebufferHMRender();
 }
 
 // transforms glfw screen coordinates into normalized OpenGL coordinates.
@@ -163,6 +236,50 @@ void MouseButton(GLFWwindow* window, int button, int action, int mod) {
     }
 }
 
+void dontExceedTerrainIfFPS() {
+    if(FPS_mode) {
+        if(cam_pos[0] > 1.0f) {
+            cam_pos[0] = 1.0f;
+        } else if (cam_pos[0] < -1.0f) {
+            cam_pos[0] = -1.0f;
+        }
+        if(cam_pos[2] > 1.0f) {
+            cam_pos[2] = 1.0f;
+        } else if (cam_pos[2] < -1.0f) {
+            cam_pos[2] = -1.0f;
+        }
+    }
+}
+
+void move(bool forward) {
+    float coeff = -1.0f;
+    if(forward) {
+        coeff = 1.0f;
+    }
+    total = abs(cam_look[0]-cam_pos[0]) + abs(cam_look[1]-cam_pos[1]) + abs(cam_look[2]-cam_pos[2]);
+    cam_pos[0] = cam_pos[0] + coeff * (((cam_look[0]-cam_pos[0])/total) * move_coeff);
+    cam_pos[2] = cam_pos[2] + coeff * (((cam_look[2]-cam_pos[2])/total) * move_coeff);
+    if(!FPS_mode) {
+        cam_pos[1] = cam_pos[1] + coeff * (((cam_look[1]-cam_pos[1])/total) * move_coeff);
+    } else {
+        dontExceedTerrainIfFPS();
+        cam_pos[1] = getHeight(cam_pos[0], cam_pos[2], tex_width)/FPS_coeff + margin;
+    }
+    cam_look[0] = cam_look[0] + coeff * (((cam_look[0]-cam_pos[0])/total) * move_coeff);
+    if(!FPS_mode) {
+        cam_look[1] = cam_look[1] + coeff * (((cam_look[1]-cam_pos[1])/total) * move_coeff);
+    }
+    cam_look[2] = cam_look[2] + coeff * (((cam_look[2]-cam_pos[2])/total) * move_coeff);
+}
+
+void moveForward() {
+    move(true);
+}
+
+void moveBackward() {
+    move(false);
+}
+
 void MousePos(GLFWwindow* window, double x, double y) {
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
         vec2 p = TransformScreenCoords(window, x, y);
@@ -174,9 +291,9 @@ void MousePos(GLFWwindow* window, double x, double y) {
     // zoom
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
         if (y > last_y) {
-          view_matrix[3][2] *= 1.01f;
+            moveBackward();
         } else {
-          view_matrix[3][2] /= 1.01f;
+            moveForward();
         }
     }
     last_y = y;
@@ -186,9 +303,81 @@ void ErrorCallback(int error, const char* description) {
     fputs(description, stderr);
 }
 
+void rotate2D(float position_0, float position_1, float& look0, float& look1, float angle, bool vertical) {
+    if(!vertical) {
+        look0 = position_0 + (look0 - position_0) * cos(angle) - (look1 - position_1) * sin(angle);
+    }
+    look1 = position_1 + (look0 - position_0) * sin(angle) + (look1 - position_1) * cos(angle);
+}
+
 void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, GL_TRUE);
+    }
+
+    switch(key) {
+        case 'W':
+            //Forward
+            if(action == GLFW_RELEASE) {
+                moveForward();
+            } else {
+                moveForward();
+            }
+            break;
+        case 'S':
+            //Backward
+            if(action == GLFW_RELEASE) {
+                moveBackward();
+            } else {
+                moveBackward();
+            }
+            break;
+        case 'A':
+            //left
+            if(action == GLFW_RELEASE) {
+                rotate2D(cam_pos[0], cam_pos[2], cam_look[0], cam_look[2], -0.05, false);
+            } else {
+                rotate2D(cam_pos[0], cam_pos[2], cam_look[0], cam_look[2], -0.05, false);
+            }
+            break;
+        case 'D':
+            //right
+            if(action == GLFW_RELEASE) {
+                rotate2D(cam_pos[0], cam_pos[2], cam_look[0], cam_look[2], +0.05, false);
+            } else {
+                rotate2D(cam_pos[0], cam_pos[2], cam_look[0], cam_look[2], +0.05, false);
+            }
+            break;
+        case 'Q':
+            //up
+            if(action == GLFW_RELEASE) {
+                rotate2D(0,0, cam_look[0], cam_look[1], -0.1f, true);
+            } else {
+                rotate2D(0,0, cam_look[0], cam_look[1], -0.1f, true);
+            }
+            break;
+        case 'E':
+            //down
+            if(action == GLFW_RELEASE) {
+                rotate2D(0,0, cam_look[0], cam_look[1], 0.1f, true);
+            } else {
+                rotate2D(0,0, cam_look[0], cam_look[1], 0.1f, true);
+            }
+            break;
+        case 'F':
+            // only act on release
+            if(action != GLFW_RELEASE) {
+                return;
+            }
+            FPS_mode = !FPS_mode;
+            dontExceedTerrainIfFPS();
+            if(FPS_mode) {
+                //set cam height !
+                cam_pos[1] = getHeight(cam_pos[0], cam_pos[2], tex_width)/FPS_coeff + margin;
+            }
+            break;
+        default:
+            break;
     }
 }
 
@@ -221,7 +410,7 @@ int main(int argc, char *argv[]) {
     // makes the OpenGL context of window current on the calling thread
     glfwMakeContextCurrent(window);
 
-    // set the callback for escape key
+    // set the callback for escape key and camera movements
     glfwSetKeyCallback(window, KeyCallback);
 
     // set the framebuffer resize callback
