@@ -40,14 +40,15 @@ vec3 cam_pos;
 vec3 cam_look;
 vec3 cam_up;
 
-float move_coeff = 0.05;
+float move_coeff = 0.005;
 bool FPS_mode = false;
 
 float total;
 
 float last_y;
 
-float margin = 0.0f;
+float margin = 0.08f;
+float FPS_coeff = 2.5f;
 
 //to store globally the height of the terrain.
 GLfloat heightmap_data[tex_width * tex_width];
@@ -241,7 +242,7 @@ void move(bool forward) {
         cam_pos[1] = cam_pos[1] + coeff * (((cam_look[1]-cam_pos[1])/total) * move_coeff);
     } else {
         dontExceedTerrainIfFPS();
-        cam_pos[1] = getHeight(cam_pos[0], cam_pos[2], tex_width) + margin;
+        cam_pos[1] = getHeight(cam_pos[0], cam_pos[2], tex_width)/FPS_coeff + margin;
     }
     cam_look[0] = cam_look[0] + coeff * (((cam_look[0]-cam_pos[0])/total) * move_coeff);
     if(!FPS_mode) {
@@ -351,7 +352,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
             dontExceedTerrainIfFPS();
             if(FPS_mode) {
                 //set cam height !
-                cam_pos[1] = getHeight(cam_pos[0], cam_pos[2], tex_width) + margin;
+                cam_pos[1] = getHeight(cam_pos[0], cam_pos[2], tex_width)/FPS_coeff + margin;
             }
             break;
         default:
