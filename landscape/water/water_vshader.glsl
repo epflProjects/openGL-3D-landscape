@@ -33,7 +33,7 @@ void main() {
     float y = uv[1];
 
 
-    /* Using Gernster Wave equation for 5 different arbitrary defined vawe.*/
+    //Using Gernster Wave equation for 5 different arbitrary defined vawe.
     for(int i = 0; i < WAVE_NBR; ++i){
     	float wi = 2*PI/L[i];
     	float phi = S[i]*wi;

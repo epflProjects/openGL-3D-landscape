@@ -97,6 +97,9 @@ class Water {
                                       ZERO_STRIDE, ZERO_BUFFER_OFFSET);
             }
 
+            //not sure about this part.
+            stbi_set_flip_vertically_on_load(1);
+
             //load mirror texture
             texture_mirror_id_ = tex_mirror;
             GLuint tex_mirror_id = glGetUniformLocation(program_id_, "tex_mirror");

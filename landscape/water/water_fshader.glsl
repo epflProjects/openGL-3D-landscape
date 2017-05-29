@@ -16,7 +16,7 @@ vec3 hexToFloatColor(vec3 hex){
 }
 
 void main() {
-	    //Querying the inverted View's height and width.
+	 //Querying the inverted View's height and width.
     vec2 window_dims = textureSize(tex_mirror, 0);
     float window_width = window_dims.x;
     float window_height = window_dims.y;
@@ -25,8 +25,5 @@ void main() {
     float _u = gl_FragCoord.x / window_width;
 
     float _v = gl_FragCoord.y / window_height;
-
-
-    //color = vec4(hexToFloatColor(vec3(104,128,156)), 0.7f);
-    color = mix(hexToFloatColor(vec3(104,128,156)), texture(tex_mirror, vec2(_u,_v)), vec3(.15))
+    color = vec4(mix(hexToFloatColor(vec3(104,128,156)), texture(tex_mirror, vec2(_u,_v)).rgb, vec3(.15)), 0.7f);
 }

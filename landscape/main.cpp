@@ -94,18 +94,19 @@ void Display() {
     {
         vec3 cam_down(cam_up.x, cam_up.y, -cam_up.z);
         vec3 mirrored_cam_pos(cam_pos.x, cam_pos.y, /*-*/cam_pos.z);
-        mat4 mirrored_view = lookAt(mirrored_cam_pos, cam_look, cam_down);
+        //mat4 mirrored_view = lookAt(mirrored_cam_pos, cam_look, cam_down);
         mat4 mirrored_proj = scale(projection_matrix, vec3(-1.0f, 1.0f, 1.0f));
  
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        terrain.Draw(time, trackball_matrix * IDENTITY_MATRIX, mirrored_view, mirrored_proj);
+        terrain.Draw(time, trackball_matrix * IDENTITY_MATRIX, view_matrix, mirrored_proj);
+        //sky.Draw(trackball_matrix, mirrored_view, mirrored_proj);
     }
     mirrorBuffer.Unbind();
 
     // render to window
     glViewport(0, 0, window_width, window_height);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    terrain.Draw(time, trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
+    //terrain.Draw(time, trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
     //sky.Draw(trackball_matrix, view_matrix, projection_matrix);
     water.Draw(time, trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
     
