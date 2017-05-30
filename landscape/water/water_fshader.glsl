@@ -25,5 +25,6 @@ void main() {
     float _u = gl_FragCoord.x / window_width;
 
     float _v = gl_FragCoord.y / window_height;
-    color = vec4(mix(hexToFloatColor(vec3(104,128,156)), texture(tex_mirror, vec2(_u,_v)).rgb, vec3(.15)), 0.7f);
+    //color = vec4(mix(hexToFloatColor(vec3(104.0f,128.0f,156.0f)), texture(tex_mirror, vec2(_u,_v)).rgb, vec3(.15)), 0.8f);
+    color = vec4(texture(tex_mirror, vec2(_u,_v)).rgb, 0.8f);
 }

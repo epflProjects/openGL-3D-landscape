@@ -23,7 +23,7 @@ class FrameBuffer {
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
         }
 
-        int Init(int image_width, int image_height, bool use_interpolation = false) {
+        int Init(int image_width, int image_height, bool use_interpolation = false, bool perlin_render = true) {
             this->width_ = image_width;
             this->height_ = image_height;
 
@@ -45,8 +45,17 @@ class FrameBuffer {
                 // create texture for the color attachment
                 // see Table.2 on
                 // khronos.org/opengles/sdk/docs/man3/docbook4/xhtml/glTexImage2D.xml
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, width_, height_, 0,
-                             GL_RED, GL_FLOAT, NULL);
+                if(perlin_render){
+                    //If we use the framebuffer to render the perlin noise, we only need one channel of color, and we need to use 32 signed bit floats.
+                    glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, width_, height_, 0,
+                             GL_RED, GL_FLOAT, NULL);    
+                }else{  
+                    //otherwise, we render normal colors.
+                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, width_, height_, 0,
+                                 GL_RGB, GL_FLOAT, NULL);    
+                }
+                
+                
                 // how to load from buffer
             }
 

@@ -101,6 +101,7 @@ class Water {
             stbi_set_flip_vertically_on_load(1);
 
             //load mirror texture
+            //glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV, GL_REPLACE);
             texture_mirror_id_ = tex_mirror;
             GLuint tex_mirror_id = glGetUniformLocation(program_id_, "tex_mirror");
             glUniform1i(tex_mirror_id, 0 /*GL_TEXTURE0*/);
