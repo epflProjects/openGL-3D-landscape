@@ -40,15 +40,30 @@ vec3 cam_pos;
 vec3 cam_look;
 vec3 cam_up;
 
-float move_coeff = 0.005;
+float default_move_coeff = 0.01;
+float default_rotation_move_coeff = 0.01;
 bool FPS_mode = false;
 
+bool bezier_mode = false;
+
 float total;
+bool m_forward;
+bool m_backward;
+bool m_right;
+bool m_left;
+bool m_up;
+bool m_down;
+
+bool inertia;
+float inertia_move_coeff;
+
 
 float last_y;
 
-float margin = 0.08f;
+float margin = 0.1f;
 float FPS_coeff = 2.5f;
+
+float total_time = 15.0f;
 
 //to store globally the height of the terrain.
 GLfloat heightmap_data[tex_width * tex_width];
@@ -126,6 +141,14 @@ float getHeight(float x, float y, int terrain_w){
     return heightmap_data[newX * terrain_w + newY];
 }
 
+
+void setCamAndLookAtTime(float time) {
+    int t = int(time) % int(total_time);
+
+
+}
+
+
 void Init(GLFWwindow* window) {
     glClearColor(0.0, 0.0, 0.0 /*black*/, 1.0 /*solid*/);
     glEnable(GL_DEPTH_TEST);
@@ -160,6 +183,130 @@ void Init(GLFWwindow* window) {
     glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
+void dontExceedTerrainIfFPS() {
+    if(FPS_mode) {
+        if(cam_pos[0] > 1.0f) {
+            cam_pos[0] = 1.0f;
+        } else if (cam_pos[0] < -1.0f) {
+            cam_pos[0] = -1.0f;
+        }
+        if(cam_pos[2] > 1.0f) {
+            cam_pos[2] = 1.0f;
+        } else if (cam_pos[2] < -1.0f) {
+            cam_pos[2] = -1.0f;
+        }
+    }
+}
+
+void move(bool forward, float move_coeff) {
+    float coeff = -1.0f;
+    if(forward) {
+        coeff = 1.0f;
+    }
+    total = abs(cam_look[0]-cam_pos[0]) + abs(cam_look[1]-cam_pos[1]) + abs(cam_look[2]-cam_pos[2]);
+    cam_pos[0] = cam_pos[0] + coeff * (((cam_look[0]-cam_pos[0])/total) * move_coeff);
+    cam_pos[2] = cam_pos[2] + coeff * (((cam_look[2]-cam_pos[2])/total) * move_coeff);
+    if(!FPS_mode) {
+        cam_pos[1] = cam_pos[1] + coeff * (((cam_look[1]-cam_pos[1])/total) * move_coeff);
+    } else {
+        dontExceedTerrainIfFPS();
+        cam_pos[1] = getHeight(cam_pos[0], cam_pos[2], tex_width)/FPS_coeff + margin;
+    }
+    cam_look[0] = cam_look[0] + coeff * (((cam_look[0]-cam_pos[0])/total) * move_coeff);
+    if(!FPS_mode) {
+        cam_look[1] = cam_look[1] + coeff * (((cam_look[1]-cam_pos[1])/total) * move_coeff);
+    }
+    cam_look[2] = cam_look[2] + coeff * (((cam_look[2]-cam_pos[2])/total) * move_coeff);
+}
+
+void moveForward(float move_coeff) {
+    move(true, move_coeff);
+}
+
+void moveBackward(float move_coeff) {
+    move(false, move_coeff);
+}
+
+void rotate2D(float position_0, float position_1, float& look0, float& look1, float angle, bool vertical) {
+    if(!vertical) {
+        look0 = position_0 + (look0 - position_0) * cos(angle) - (look1 - position_1) * sin(angle);
+    }
+    look1 = position_1 + (look0 - position_0) * sin(angle) + (look1 - position_1) * cos(angle);
+}
+
+void displayMove() {
+    if(m_forward && !inertia) {
+        moveForward(default_move_coeff);
+    }
+    if (m_forward && inertia) {
+        moveForward(inertia_move_coeff);
+        inertia_move_coeff /= 1.5;
+        if(inertia_move_coeff < 0.00001f) {
+            m_forward = false;
+            inertia = false;
+        }
+    }
+    if(m_backward && !inertia) {
+        moveBackward(default_move_coeff);
+    }
+    if (m_backward && inertia) {
+        moveBackward(inertia_move_coeff);
+        inertia_move_coeff /= 1.5;
+        if(inertia_move_coeff < 0.00001f) {
+            m_backward = false;
+            inertia = false;
+        }
+    }
+    if(m_right && !inertia) {
+        rotate2D(cam_pos[0], cam_pos[2], cam_look[0], cam_look[2], default_rotation_move_coeff, false);
+    }
+    if (m_right && inertia) {
+        rotate2D(cam_pos[0], cam_pos[2], cam_look[0], cam_look[2], inertia_move_coeff, false);
+        inertia_move_coeff /= 1.5;
+        if(inertia_move_coeff < 0.00001f) {
+            m_right = false;
+            inertia = false;
+        }
+    }
+    if(m_left && !inertia) {
+        rotate2D(cam_pos[0], cam_pos[2], cam_look[0], cam_look[2], (-1 * default_rotation_move_coeff), false);
+    }
+    if (m_left && inertia) {
+        rotate2D(cam_pos[0], cam_pos[2], cam_look[0], cam_look[2], (-1 * inertia_move_coeff), false);
+        inertia_move_coeff /= 1.5;
+        if(inertia_move_coeff < 0.00001f) {
+            m_left = false;
+            inertia = false;
+        }
+    }
+    if(m_up && !inertia) {
+        rotate2D(0,0, cam_look[0], cam_look[1], (-1 * default_rotation_move_coeff), true);
+    }
+    if (m_up && inertia) {
+        rotate2D(0,0, cam_look[0], cam_look[1], (-1 * inertia_move_coeff), true);
+        inertia_move_coeff /= 1.5;
+        if(inertia_move_coeff < 0.00001f) {
+            m_up = false;
+            inertia = false;
+        }
+    }
+    if(m_down && !inertia) {
+        rotate2D(0,0, cam_look[0], cam_look[1], default_rotation_move_coeff, true);
+    }
+    if (m_down && inertia) {
+        rotate2D(0,0, cam_look[0], cam_look[1], inertia_move_coeff, true);
+        inertia_move_coeff /= 1.5;
+        if(inertia_move_coeff < 0.00001f) {
+            m_down = false;
+            inertia = false;
+        }
+    }
+
+    if(FPS_mode) {
+        //set cam height !
+        cam_pos[1] = getHeight(cam_pos[0], cam_pos[2], tex_width)/FPS_coeff + margin;
+    }
+}
 
 // gets called for every frame.
 void Display() {
@@ -171,6 +318,12 @@ void Display() {
     sky.Draw(trackball_matrix, view_matrix, projection_matrix);
     water.Draw(time, trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
     
+    if(bezier_mode) {
+        setCamAndLookAtTime(time);
+    }
+
+    displayMove();
+
     view_matrix = lookAt(cam_pos, cam_look, cam_up);
 }
 
@@ -215,50 +368,6 @@ void MouseButton(GLFWwindow* window, int button, int action, int mod) {
     }
 }
 
-void dontExceedTerrainIfFPS() {
-    if(FPS_mode) {
-        if(cam_pos[0] > 1.0f) {
-            cam_pos[0] = 1.0f;
-        } else if (cam_pos[0] < -1.0f) {
-            cam_pos[0] = -1.0f;
-        }
-        if(cam_pos[2] > 1.0f) {
-            cam_pos[2] = 1.0f;
-        } else if (cam_pos[2] < -1.0f) {
-            cam_pos[2] = -1.0f;
-        }
-    }
-}
-
-void move(bool forward) {
-    float coeff = -1.0f;
-    if(forward) {
-        coeff = 1.0f;
-    }
-    total = abs(cam_look[0]-cam_pos[0]) + abs(cam_look[1]-cam_pos[1]) + abs(cam_look[2]-cam_pos[2]);
-    cam_pos[0] = cam_pos[0] + coeff * (((cam_look[0]-cam_pos[0])/total) * move_coeff);
-    cam_pos[2] = cam_pos[2] + coeff * (((cam_look[2]-cam_pos[2])/total) * move_coeff);
-    if(!FPS_mode) {
-        cam_pos[1] = cam_pos[1] + coeff * (((cam_look[1]-cam_pos[1])/total) * move_coeff);
-    } else {
-        dontExceedTerrainIfFPS();
-        cam_pos[1] = getHeight(cam_pos[0], cam_pos[2], tex_width)/FPS_coeff + margin;
-    }
-    cam_look[0] = cam_look[0] + coeff * (((cam_look[0]-cam_pos[0])/total) * move_coeff);
-    if(!FPS_mode) {
-        cam_look[1] = cam_look[1] + coeff * (((cam_look[1]-cam_pos[1])/total) * move_coeff);
-    }
-    cam_look[2] = cam_look[2] + coeff * (((cam_look[2]-cam_pos[2])/total) * move_coeff);
-}
-
-void moveForward() {
-    move(true);
-}
-
-void moveBackward() {
-    move(false);
-}
-
 void MousePos(GLFWwindow* window, double x, double y) {
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
         vec2 p = TransformScreenCoords(window, x, y);
@@ -270,9 +379,9 @@ void MousePos(GLFWwindow* window, double x, double y) {
     // zoom
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
         if (y > last_y) {
-            moveBackward();
+            moveBackward(default_move_coeff);
         } else {
-            moveForward();
+            moveForward(default_move_coeff);
         }
     }
     last_y = y;
@@ -280,13 +389,6 @@ void MousePos(GLFWwindow* window, double x, double y) {
 
 void ErrorCallback(int error, const char* description) {
     fputs(description, stderr);
-}
-
-void rotate2D(float position_0, float position_1, float& look0, float& look1, float angle, bool vertical) {
-    if(!vertical) {
-        look0 = position_0 + (look0 - position_0) * cos(angle) - (look1 - position_1) * sin(angle);
-    }
-    look1 = position_1 + (look0 - position_0) * sin(angle) + (look1 - position_1) * cos(angle);
 }
 
 void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
@@ -298,61 +400,78 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
         case 'W':
             //Forward
             if(action == GLFW_RELEASE) {
-                moveForward();
+                inertia_move_coeff = default_move_coeff;
+                inertia = true;
             } else {
-                moveForward();
+                m_forward = true;
             }
             break;
         case 'S':
             //Backward
             if(action == GLFW_RELEASE) {
-                moveBackward();
+                inertia_move_coeff = default_move_coeff;
+                inertia = true;
             } else {
-                moveBackward();
+                m_backward = true;
             }
             break;
         case 'A':
             //left
             if(action == GLFW_RELEASE) {
-                rotate2D(cam_pos[0], cam_pos[2], cam_look[0], cam_look[2], -0.05, false);
+                inertia_move_coeff = default_rotation_move_coeff;
+                inertia = true;
             } else {
-                rotate2D(cam_pos[0], cam_pos[2], cam_look[0], cam_look[2], -0.05, false);
+                m_left = true;
             }
             break;
         case 'D':
             //right
             if(action == GLFW_RELEASE) {
-                rotate2D(cam_pos[0], cam_pos[2], cam_look[0], cam_look[2], +0.05, false);
+                inertia_move_coeff = default_rotation_move_coeff;
+                inertia = true;
             } else {
-                rotate2D(cam_pos[0], cam_pos[2], cam_look[0], cam_look[2], +0.05, false);
+                m_right = true;
             }
             break;
         case 'Q':
             //up
             if(action == GLFW_RELEASE) {
-                rotate2D(0,0, cam_look[0], cam_look[1], -0.1f, true);
+                inertia_move_coeff = default_rotation_move_coeff;
+                inertia = true;
             } else {
-                rotate2D(0,0, cam_look[0], cam_look[1], -0.1f, true);
+                m_up = true;
             }
             break;
         case 'E':
             //down
             if(action == GLFW_RELEASE) {
-                rotate2D(0,0, cam_look[0], cam_look[1], 0.1f, true);
+                inertia_move_coeff = default_rotation_move_coeff;
+                inertia = true;
             } else {
-                rotate2D(0,0, cam_look[0], cam_look[1], 0.1f, true);
+                m_down = true;
             }
             break;
         case 'F':
             // only act on release
             if(action != GLFW_RELEASE) {
+                FPS_mode = !FPS_mode;
+                if(FPS_mode) {
+                    default_move_coeff = 0.0025f;
+                    dontExceedTerrainIfFPS();
+                } else {
+                    default_move_coeff = 0.01f;
+                }
+            }
+            break;
+        case 'B':
+            // only act on release
+            if(action != GLFW_RELEASE) {
                 return;
             }
-            FPS_mode = !FPS_mode;
+            bezier_mode = !bezier_mode;
             dontExceedTerrainIfFPS();
-            if(FPS_mode) {
-                //set cam height !
-                cam_pos[1] = getHeight(cam_pos[0], cam_pos[2], tex_width)/FPS_coeff + margin;
+            if(bezier_mode) {
+                //bezier
             }
             break;
         default:
