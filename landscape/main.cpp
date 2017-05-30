@@ -36,17 +36,18 @@ mat4 view_matrix;
 mat4 trackball_matrix;
 mat4 old_trackball_matrix;
 
+float last_y;
+
 vec3 cam_pos;
 vec3 cam_look;
 vec3 cam_up;
+float total;
+
 
 float default_move_coeff = 0.01;
 float default_rotation_move_coeff = 0.01;
-bool FPS_mode = false;
-
-bool bezier_mode = false;
-
-float total;
+float inertia_move_coeff;
+bool inertia;
 bool m_forward;
 bool m_backward;
 bool m_right;
@@ -54,16 +55,14 @@ bool m_left;
 bool m_up;
 bool m_down;
 
-bool inertia;
-float inertia_move_coeff;
-
-
-float last_y;
-
+bool FPS_mode = false;
 float margin = 0.1f;
 float FPS_coeff = 2.5f;
 
-float total_time = 15.0f;
+bool bezier_mode = false;
+float bezier_speed = 1.0f;
+float bezier_frame_number = 0.0f;
+vec2 points[5] = {vec2(1,1), vec2(0.25,0.75), vec2(0,0), vec2(0.75,0.25), vec2(1,1)};
 
 //to store globally the height of the terrain.
 GLfloat heightmap_data[tex_width * tex_width];
@@ -140,14 +139,6 @@ float getHeight(float x, float y, int terrain_w){
     int newX = (-y + 1.0f) * center;
     return heightmap_data[newX * terrain_w + newY];
 }
-
-
-void setCamAndLookAtTime(float time) {
-    int t = int(time) % int(total_time);
-
-
-}
-
 
 void Init(GLFWwindow* window) {
     glClearColor(0.0, 0.0, 0.0 /*black*/, 1.0 /*solid*/);
@@ -308,6 +299,24 @@ void displayMove() {
     }
 }
 
+// number_of iterations --> curves : (points.size() - 1) / 2
+
+float getPt(float n1, float n2, float perc) {
+    float diff = n2 - n1;
+    return n1 + ( diff * perc );
+}
+
+void setBezierPositionForFrame(float bezier_frame_number){
+    //set cam_look and cam_pos
+    float xa = getPt(points[0].x, points[1].x, bezier_frame_number);
+    float xb = getPt(points[1].x, points[2].x, bezier_frame_number);
+    cam_pos[0] = getPt(xa, xb, bezier_frame_number);
+
+    float ya = getPt(points[0].y, points[1].y, bezier_frame_number);
+    float yb = getPt(points[1].y, points[1].y, bezier_frame_number);
+    cam_pos[2] = getPt(ya , yb, bezier_frame_number);
+}
+
 // gets called for every frame.
 void Display() {
     // render to window
@@ -319,10 +328,17 @@ void Display() {
     water.Draw(time, trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
     
     if(bezier_mode) {
-        setCamAndLookAtTime(time);
+        bezier_frame_number += 0.01 * bezier_speed;
+        if(bezier_frame_number > 1.0f) {
+            bezier_mode = false;
+        } else if (bezier_frame_number < 0.0f) {
+            bezier_mode = false;
+        } else {
+            setBezierPositionForFrame(bezier_frame_number);
+        }
+    } else {
+        displayMove();
     }
-
-    displayMove();
 
     view_matrix = lookAt(cam_pos, cam_look, cam_up);
 }
@@ -399,56 +415,74 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
     switch(key) {
         case 'W':
             //Forward
-            if(action == GLFW_RELEASE) {
-                inertia_move_coeff = default_move_coeff;
-                inertia = true;
+            if(bezier_mode) {
+                bezier_speed += 0.1;
+                cout << "speed : " << bezier_speed << endl;
             } else {
-                m_forward = true;
+                if(action == GLFW_RELEASE) {
+                    inertia_move_coeff = default_move_coeff;
+                    inertia = true;
+                } else {
+                    m_forward = true;
+                }
             }
             break;
         case 'S':
             //Backward
-            if(action == GLFW_RELEASE) {
-                inertia_move_coeff = default_move_coeff;
-                inertia = true;
+            if(bezier_mode) {
+                bezier_speed -= 0.1;
+                cout << "speed : " << bezier_speed << endl;
             } else {
-                m_backward = true;
+                if(action == GLFW_RELEASE) {
+                    inertia_move_coeff = default_move_coeff;
+                    inertia = true;
+                } else {
+                    m_backward = true;
+                }
             }
             break;
         case 'A':
             //left
-            if(action == GLFW_RELEASE) {
-                inertia_move_coeff = default_rotation_move_coeff;
-                inertia = true;
-            } else {
-                m_left = true;
+            if(!bezier_mode) {
+                if(action == GLFW_RELEASE) {
+                    inertia_move_coeff = default_rotation_move_coeff;
+                    inertia = true;
+                } else {
+                    m_left = true;
+                }
             }
             break;
         case 'D':
             //right
-            if(action == GLFW_RELEASE) {
-                inertia_move_coeff = default_rotation_move_coeff;
-                inertia = true;
-            } else {
-                m_right = true;
+            if(!bezier_mode) {
+                if(action == GLFW_RELEASE) {
+                    inertia_move_coeff = default_rotation_move_coeff;
+                    inertia = true;
+                } else {
+                    m_right = true;
+                }
             }
             break;
         case 'Q':
             //up
-            if(action == GLFW_RELEASE) {
-                inertia_move_coeff = default_rotation_move_coeff;
-                inertia = true;
-            } else {
-                m_up = true;
+            if(!bezier_mode) {
+                if(action == GLFW_RELEASE) {
+                    inertia_move_coeff = default_rotation_move_coeff;
+                    inertia = true;
+                } else {
+                    m_up = true;
+                }
             }
             break;
         case 'E':
             //down
-            if(action == GLFW_RELEASE) {
-                inertia_move_coeff = default_rotation_move_coeff;
-                inertia = true;
-            } else {
-                m_down = true;
+            if(!bezier_mode) {
+                if(action == GLFW_RELEASE) {
+                    inertia_move_coeff = default_rotation_move_coeff;
+                    inertia = true;
+                } else {
+                    m_down = true;
+                }
             }
             break;
         case 'F':
@@ -466,12 +500,11 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
         case 'B':
             // only act on release
             if(action != GLFW_RELEASE) {
+                bezier_mode = !bezier_mode;
+                if(bezier_mode) {
+                    bezier_frame_number = 0.0f;
+                }
                 return;
-            }
-            bezier_mode = !bezier_mode;
-            dontExceedTerrainIfFPS();
-            if(bezier_mode) {
-                //bezier
             }
             break;
         default:
