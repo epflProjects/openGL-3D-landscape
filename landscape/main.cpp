@@ -99,7 +99,7 @@ void Display() {
                projection_matrix);
   sky.Draw(trackball_matrix, view_matrix, projection_matrix);
   float currentTime = glfwGetTime();
-  snow.Draw(cam_pos, view_matrix, currentTime - lastTime);
+  snow.Draw(cam_pos, view_matrix, time - lastTime);
   water.Draw(time, trackball_matrix * IDENTITY_MATRIX, view_matrix,
              projection_matrix);
 
