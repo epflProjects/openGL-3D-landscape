@@ -33,5 +33,5 @@ void main() {
   // // UV of the vertex. No special space for this one.
   // UV = squareVertices.xy + vec2(0.5, 0.5);
   // particlecolor = color;
-  gl_Position = squareVertices;
+  gl_Position = vec4(squareVertices, 1);
 }

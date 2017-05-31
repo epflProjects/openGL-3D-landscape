@@ -63,7 +63,7 @@ public:
     static GLubyte *g_snowflake_color_data = new GLubyte[MaxSnowFlakes * 4];
 
     GLuint program_id_ =
-        icg_helper::LoadShaders("snow_vshader.glsl", "snow_fshader.glsl");
+        icg_helper::LoadShaders("particles_vshader.glsl", "particles_fshader.glsl");
 
     for (int i = 0; i < MaxSnowFlakes; i++) {
       SnowFlakesContainer[i].life = -1.0f;
