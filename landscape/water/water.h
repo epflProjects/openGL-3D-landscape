@@ -4,67 +4,28 @@
 
 using namespace std;
 
-class Grid {
+class Water {
 
     private:
         GLuint vertex_array_id_;                // vertex array object
         GLuint vertex_buffer_object_position_;  // memory buffer for positions
         GLuint vertex_buffer_object_index_;     // memory buffer for indices
         GLuint program_id_;                     // GLSL shader program ID
-        GLuint heightmap_tex_id_;
-        GLuint grass_texture_id_;
-        GLuint rock_texture_id_;
-        GLuint sand_texture_id_;
-        GLuint snow_texture_id_;
         GLuint num_indices_;                    // number of vertices to render
+        GLuint texture_mirror_id_;              // texture mirror ID
         GLuint MVP_id_;                         // model, view, proj matrix ID
 
-        void loadTexture(string filename, GLuint* texture_id, string texture_name_shader, int texture_number) {
-            int width;
-            int height;
-            int nb_component;
-            // set stb_image to have the same coordinates as OpenGL
-            stbi_set_flip_vertically_on_load(1);
-            unsigned char* image = stbi_load(filename.c_str(), &width,
-                                             &height, &nb_component, 0);
-
-            if (image == nullptr) {
-                throw(string("Failed to load texture"));
-            }
-
-            glGenTextures(1, texture_id);
-            glBindTexture(GL_TEXTURE_2D, *texture_id);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-
-            if (nb_component == 3) {
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0,
-                             GL_RGB, GL_UNSIGNED_BYTE, image);
-            } else if (nb_component == 4) {
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0,
-                           GL_RGBA, GL_UNSIGNED_BYTE, image);
-            }
-
-            GLuint tex_id = glGetUniformLocation(program_id_, texture_name_shader.c_str());
-            glUniform1i(tex_id, texture_number - GL_TEXTURE0);
-
-            // cleanup
-            glBindTexture(GL_TEXTURE_2D, 0);
-            stbi_image_free(image);
-        }
 
     public:
-        void Init(GLuint heightmap_tex_id) {
+        void Init(GLuint tex_mirror) {
             // compile the shaders.
-            program_id_ = icg_helper::LoadShaders("terrain_vshader.glsl",
-                                                  "terrain_fshader.glsl");
+            program_id_ = icg_helper::LoadShaders("water_vshader.glsl",
+                                                  "water_fshader.glsl");
             if(!program_id_) {
                 exit(EXIT_FAILURE);
             }
 
             glUseProgram(program_id_);
-
-
 
             // vertex one vertex array
             glGenVertexArrays(1, &vertex_array_id_);
@@ -115,7 +76,6 @@ class Grid {
                     idx = idx + increment;
                 }
 
-
                 num_indices_ = indices.size();
 
                 // position buffer
@@ -137,21 +97,20 @@ class Grid {
                                       ZERO_STRIDE, ZERO_BUFFER_OFFSET);
             }
 
-            // load texture
-            loadTexture("grass_texture.tga", &grass_texture_id_, "grass_tex", GL_TEXTURE0+1);
-            loadTexture("sand_texture.tga", &sand_texture_id_, "sand_tex", GL_TEXTURE0+2);
-            loadTexture("snow_texture.tga", &snow_texture_id_, "snow_tex", GL_TEXTURE0+3);
-            loadTexture("rock_texture.tga", &rock_texture_id_, "rock_tex", GL_TEXTURE0+4);
+            //not sure about this part.
+            stbi_set_flip_vertically_on_load(1);
 
-            // heightmap texture
-            this->heightmap_tex_id_ = heightmap_tex_id;
-            glBindTexture(GL_TEXTURE_2D, this->heightmap_tex_id_);
-            GLuint heightmap_id = glGetUniformLocation(program_id_, "heightmap_tex");
-            glUniform1i(heightmap_id, 0 /*GL_TEXTURE0*/);
-            glBindTexture(GL_TEXTURE_2D, GL_TEXTURE0);
+            //load mirror texture
+            //glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV, GL_REPLACE);
+            texture_mirror_id_ = tex_mirror;
+            GLuint tex_mirror_id = glGetUniformLocation(program_id_, "tex_mirror");
+            glUniform1i(tex_mirror_id, 0 /*GL_TEXTURE0*/);
 
             // other uniforms
             MVP_id_ = glGetUniformLocation(program_id_, "MVP");
+
+            //not sure about this one.
+            glBindTexture(GL_TEXTURE_2D, 0);
 
             // to avoid the current object being polluted
             glBindVertexArray(0);
@@ -165,35 +124,18 @@ class Grid {
             glDeleteBuffers(1, &vertex_buffer_object_index_);
             glDeleteVertexArrays(1, &vertex_array_id_);
             glDeleteProgram(program_id_);
-            glDeleteTextures(1, &heightmap_tex_id_);
-            glDeleteTextures(1, &grass_texture_id_);
-            glDeleteTextures(1, &sand_texture_id_);
-            glDeleteTextures(1, &snow_texture_id_);
-            glDeleteTextures(1, &rock_texture_id_);
+            glDeleteTextures(1, &texture_mirror_id_);
         }
 
         void Draw(float time, const glm::mat4 &model = IDENTITY_MATRIX,
                   const glm::mat4 &view = IDENTITY_MATRIX,
-                  const glm::mat4 &projection = IDENTITY_MATRIX,
-                  const bool isMirror = false) {
+                  const glm::mat4 &projection = IDENTITY_MATRIX) {
             glUseProgram(program_id_);
             glBindVertexArray(vertex_array_id_);
 
             // bind textures
             glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, heightmap_tex_id_);
-
-            glActiveTexture(GL_TEXTURE0+1);
-            glBindTexture(GL_TEXTURE_2D, grass_texture_id_);
-
-            glActiveTexture(GL_TEXTURE0+2);
-            glBindTexture(GL_TEXTURE_2D, sand_texture_id_);
-
-            glActiveTexture(GL_TEXTURE0+3);
-            glBindTexture(GL_TEXTURE_2D, snow_texture_id_);
-
-            glActiveTexture(GL_TEXTURE0+4);
-            glBindTexture(GL_TEXTURE_2D, rock_texture_id_);
+            glBindTexture(GL_TEXTURE_2D, texture_mirror_id_);
 
             // setup MVP
             glm::mat4 MVP = projection*view*model;
@@ -201,8 +143,6 @@ class Grid {
 
             // pass the current time stamp to the shader.
             glUniform1f(glGetUniformLocation(program_id_, "time"), time);
-
-            glUniform1i(glGetUniformLocation(program_id_, "isMirror"), isMirror);
 
             // draw
             glDrawElements(GL_TRIANGLE_STRIP, num_indices_, GL_UNSIGNED_INT, 0);

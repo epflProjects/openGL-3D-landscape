@@ -13,12 +13,13 @@
 #include "screenquad/screenquad.h"
 #include "trackball.h"
 #include "sky/sky.h"
+#include "water/water.h"
 
 //for memset (yes I'm an old fashioned C programmer, get over it.)
 #include <string.h>
 
 Grid terrain;
-Grid water;
+Water water;
 Trackball trackball;
 Sky sky;
 
@@ -27,6 +28,7 @@ int window_height = 600;
 const int tex_width = 2048;
 
 FrameBuffer framebuffer;
+FrameBuffer mirrorBuffer;
 ScreenQuad heightmap;
 
 using namespace glm;
@@ -162,6 +164,8 @@ float getHeight(float x, float y, int terrain_w){
 void Init(GLFWwindow* window) {
     glClearColor(0.0, 0.0, 0.0 /*black*/, 1.0 /*solid*/);
     glEnable(GL_DEPTH_TEST);
+    //added for floor reflection, not sure if need to be kept.
+    glEnable(GL_MULTISAMPLE);
 
     sky.Init();
 
@@ -180,14 +184,15 @@ void Init(GLFWwindow* window) {
     // (see http://www.glfw.org/docs/latest/window.html#window_fbsize)
     glfwGetFramebufferSize(window, &window_width, &window_height);
     GLuint heightmap_tex_id = framebuffer.Init(tex_width, tex_width);
-    terrain.Init(heightmap_tex_id, TERRAIN);
-    water.Init(heightmap_tex_id, WATER);
+    terrain.Init(heightmap_tex_id);
+
+    GLuint mirror_tex_id = mirrorBuffer.Init(window_width, window_height, true, false);
+    water.Init(mirror_tex_id);
     heightmap.Init(tex_width, tex_width, heightmap_tex_id);
     heightmap.fBmExponentPrecompAndSet(1, 1.54);
 
     framebufferHMRender();
 
-    //cout << "test of Read pixels : " << heightmap_data[(tex_width - 1) * (tex_width - 1)] << " and "<< heightmap_data[1] << endl;
     //enable transparency
     glEnable (GL_BLEND); 
     glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -351,13 +356,30 @@ vec3 getBezierPositionForFrame(vec3* pts, int size, float bezier_frame_number){
 
 // gets called for every frame.
 void Display() {
+#define MDEBUG 0
+    //render to frameBuffer of the mirror
+    const float time = glfwGetTime();
+    mirrorBuffer.Bind();
+    {
+        vec3 cam_down(cam_up.x, cam_up.y, cam_up.z);
+        vec3 mirrored_cam_pos(cam_pos.x, -cam_pos.y, cam_pos.z);
+        vec3 cam_look_down(cam_look.x, -cam_look.y, cam_look.z);
+        mat4 mirrored_proj = scale(projection_matrix, vec3(1.0f, -1.0f, 1.0f));
+        mat4 mirrored_view = lookAt(mirrored_cam_pos, cam_look_down, cam_down);
+        glViewport(0, 0, window_width, window_height);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        terrain.Draw(time,  trackball_matrix * IDENTITY_MATRIX, mirrored_view, mirrored_proj, true);
+        sky.Draw(trackball_matrix, mirrored_view, mirrored_proj);
+    }
+    mirrorBuffer.Unbind();
+
     // render to window
     glViewport(0, 0, window_width, window_height);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    const float time = glfwGetTime();
     terrain.Draw(time, trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
     sky.Draw(trackball_matrix, view_matrix, projection_matrix);
     water.Draw(time, trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
+    //update the lookAt position
     
     if(bezier_mode) {
         bezier_frame_number += 0.0005 * bezier_speed;
@@ -538,7 +560,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
                 bezier_mode = !bezier_mode;
                 if(bezier_mode) {
                     if(FPS_mode) {
-                        FPS_mode != FPS_mode;
+                        FPS_mode = !FPS_mode;
                     }
                     bezier_frame_number = 0.0f;
                 }
@@ -613,6 +635,7 @@ int main(int argc, char *argv[]) {
     terrain.Cleanup();
     framebuffer.Cleanup();
     sky.Cleanup();
+    water.Cleanup();
 
     // close OpenGL window and terminate GLFW
     glfwDestroyWindow(window);

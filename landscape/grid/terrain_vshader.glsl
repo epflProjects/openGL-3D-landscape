@@ -23,7 +23,6 @@ void main() {
 
     //for diffuse lightning on frag shader.
     light_dir = light_pos - vpoint_mv.xyz;
-
     vec3 pos_3d = vec3(newX, height, -newY);
     gl_Position = MVP * vec4(pos_3d, 1.0);
 }
