@@ -12,7 +12,6 @@
 #include "particles/snow.h"
 #include "quad/quad.h"
 #include "screenquad/screenquad.h"
-#include "trackball.h"
 #include "sky/sky.h"
 #include "water/water.h"
 
@@ -21,7 +20,6 @@
 
 Grid terrain;
 Water water;
-Trackball trackball;
 Snow snow;
 Sky sky;
 
@@ -37,8 +35,6 @@ using namespace glm;
 
 mat4 projection_matrix;
 mat4 view_matrix;
-mat4 trackball_matrix;
-mat4 old_trackball_matrix;
 
 float last_y;
 
@@ -178,8 +174,6 @@ void Init(GLFWwindow* window) {
     view_matrix = lookAt(cam_pos, cam_look, cam_up);
     float ratio = window_width / (float) window_height;
     projection_matrix = perspective(45.0f, ratio, 0.1f, 10.0f);
-
-    trackball_matrix = IDENTITY_MATRIX;
 
     // on retina/hidpi displays, pixels != screen coordinates
     // this unsures that the framebuffer has the same size as the window
@@ -370,18 +364,18 @@ void Display() {
         mat4 mirrored_view = lookAt(mirrored_cam_pos, cam_look_down, cam_down);
         glViewport(0, 0, window_width, window_height);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        terrain.Draw(time,  trackball_matrix * IDENTITY_MATRIX, mirrored_view, mirrored_proj, true);
-        sky.Draw(trackball_matrix, mirrored_view, mirrored_proj);
+        terrain.Draw(time, IDENTITY_MATRIX, mirrored_view, mirrored_proj, true);
+        sky.Draw(IDENTITY_MATRIX, mirrored_view, mirrored_proj);
     }
     mirrorBuffer.Unbind();
 
     // render to window
     glViewport(0, 0, window_width, window_height);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    terrain.Draw(time, trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
+    terrain.Draw(time, IDENTITY_MATRIX, view_matrix, projection_matrix);
     snow.Draw(cam_pos, projection_matrix, time);
-    sky.Draw(trackball_matrix, view_matrix, projection_matrix);
-    water.Draw(time, trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
+    sky.Draw(IDENTITY_MATRIX, view_matrix, projection_matrix);
+    water.Draw(time, IDENTITY_MATRIX, view_matrix, projection_matrix);
     //update the lookAt position
 
     if(bezier_mode) {
@@ -436,8 +430,6 @@ void MouseButton(GLFWwindow* window, int button, int action, int mod) {
         double x_i, y_i;
         glfwGetCursorPos(window, &x_i, &y_i);
         vec2 p = TransformScreenCoords(window, x_i, y_i);
-        trackball.BeingDrag(p.x, p.y);
-        old_trackball_matrix = trackball_matrix;
         // Store the current state of the model matrix.
     }
 }
@@ -445,9 +437,6 @@ void MouseButton(GLFWwindow* window, int button, int action, int mod) {
 void MousePos(GLFWwindow* window, double x, double y) {
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
         vec2 p = TransformScreenCoords(window, x, y);
-
-        mat4 rotation = trackball.Drag(p.x, p.y);
-        trackball_matrix = rotation * old_trackball_matrix;
     }
 
     // zoom
