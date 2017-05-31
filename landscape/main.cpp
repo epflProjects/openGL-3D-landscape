@@ -521,12 +521,14 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
         case 'F':
             // only act on release
             if(action != GLFW_RELEASE) {
-                FPS_mode = !FPS_mode;
-                if(FPS_mode) {
-                    default_move_coeff = 0.0025f;
-                    dontExceedTerrainIfFPS();
-                } else {
-                    default_move_coeff = 0.01f;
+                if(!bezier_mode) {
+                    FPS_mode = !FPS_mode;
+                    if(FPS_mode) {
+                        default_move_coeff = 0.0025f;
+                        dontExceedTerrainIfFPS();
+                    } else {
+                        default_move_coeff = 0.01f;
+                    }
                 }
             }
             break;
@@ -535,6 +537,9 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
             if(action != GLFW_RELEASE) {
                 bezier_mode = !bezier_mode;
                 if(bezier_mode) {
+                    if(FPS_mode) {
+                        FPS_mode != FPS_mode;
+                    }
                     bezier_frame_number = 0.0f;
                 }
                 return;
