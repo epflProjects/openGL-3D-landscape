@@ -96,10 +96,7 @@ public:
                  GL_STREAM_DRAW);
   }
 
-  void Draw(glm::vec3 cameraPos, glm::mat4 viewProjectionMatrix,
-            float deltaTime) {
-    // TODO je tente de mettre devant:
-    glm::vec3 CameraPosition = cameraPos;
+  void Draw(glm::mat4 viewProjectionMatrix, float deltaTime) {
     glm::mat4 ViewProjectionMatrix = viewProjectionMatrix;
 
     int newsnowflakes = (int)(deltaTime * 10000.0);
@@ -124,19 +121,6 @@ public:
 
       SnowFlakesContainer[snowflakeIndex].speed = maindir + randomdir * spread;
 
-      // // Uniform Spherical Distribution
-      // unsigned seed =
-      //     std::chrono::system_clock::now().time_since_epoch().count();
-      // std::mt19937 generator(seed);
-      // std::uniform_real_distribution<double> uniform01(0.0, 1.0);
-      // double theta = 2 * M_PI * uniform01(generator);
-      // double phi = acos(1 - 2 * uniform01(generator));
-      // double x = sin(phi) * cos(theta);
-      // double y = sin(phi) * sin(theta);
-      // double z = cos(phi);
-      // glm::vec3 USD(x, y, z);
-      // ParticlesContainer[particleIndex].speed = maindir + USD * spread;
-
       // random color
       SnowFlakesContainer[snowflakeIndex].r = 200;
       SnowFlakesContainer[snowflakeIndex].g = 200;
@@ -157,7 +141,7 @@ public:
         if (s.life > 0.0f) {
           s.speed += glm::vec3(0.0f, -9.81f, 0.0f) * (float)deltaTime * 0.5f;
           s.pos += s.speed * (float)deltaTime;
-          s.cameradistance = glm::length(s.pos - CameraPosition);
+          s.cameradistance = glm::length(s.pos);
 
           g_snowflake_position_size_data[4 * SnowflakesCount + 0] = s.pos.x;
           g_snowflake_position_size_data[4 * SnowflakesCount + 1] = s.pos.y;
