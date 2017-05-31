@@ -17,6 +17,8 @@ uniform sampler2D sand_tex; //*60
 uniform sampler2D snow_tex; //*30
 uniform sampler2D rock_tex; //*10
 
+uniform bool isMirror;
+
 #define LAND_TYPES_NBR 6
 
 float landLimits[LAND_TYPES_NBR - 1] = float[](0.0f, 0.01f, 0.04f, 0.12f, 0.14f);
@@ -185,7 +187,12 @@ void main() {
     if (lambert > 0.0f) {
       diffuse_light += (lambert * Ld) * 0.5f;
     }
-    color = vec4(0.5*diffuse_light + heightTexture(height).rgb, 1);
+    //in mirror mode, to display only what is above the water.
+    if(isMirror && height < 0){
+    	discard;
+    }else{	
+	    color = vec4(0.5*diffuse_light + heightTexture(height).rgb, 1);	
+    }
 #if COLOR
 	color = vec4(diffuse_light + hexToFloatColor(heightColor(height)), 1);
 #endif

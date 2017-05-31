@@ -174,7 +174,8 @@ class Grid {
 
         void Draw(float time, const glm::mat4 &model = IDENTITY_MATRIX,
                   const glm::mat4 &view = IDENTITY_MATRIX,
-                  const glm::mat4 &projection = IDENTITY_MATRIX) {
+                  const glm::mat4 &projection = IDENTITY_MATRIX,
+                  const bool isMirror = false) {
             glUseProgram(program_id_);
             glBindVertexArray(vertex_array_id_);
 
@@ -200,6 +201,8 @@ class Grid {
 
             // pass the current time stamp to the shader.
             glUniform1f(glGetUniformLocation(program_id_, "time"), time);
+
+            glUniform1i(glGetUniformLocation(program_id_, "isMirror"), isMirror);
 
             // draw
             glDrawElements(GL_TRIANGLE_STRIP, num_indices_, GL_UNSIGNED_INT, 0);

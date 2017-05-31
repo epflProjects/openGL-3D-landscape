@@ -153,14 +153,13 @@ void Init(GLFWwindow* window) {
     GLuint heightmap_tex_id = framebuffer.Init(tex_width, tex_width);
     terrain.Init(heightmap_tex_id);
 
-    GLuint mirror_tex_id = mirrorBuffer.Init(tex_width, tex_width, false, false);
+    GLuint mirror_tex_id = mirrorBuffer.Init(window_width, window_height, true, false);
     water.Init(mirror_tex_id);
     heightmap.Init(tex_width, tex_width, heightmap_tex_id);
     heightmap.fBmExponentPrecompAndSet(1, 1.54);
 
     framebufferHMRender();
 
-    //cout << "test of Read pixels : " << heightmap_data[(tex_width - 1) * (tex_width - 1)] << " and "<< heightmap_data[1] << endl;
     //enable transparency
     glEnable (GL_BLEND); 
     glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -169,35 +168,37 @@ void Init(GLFWwindow* window) {
 
 // gets called for every frame.
 void Display() {
+#define MDEBUG 0
     //render to frameBuffer of the mirror
     const float time = glfwGetTime();
+#if !MDEBUG
     mirrorBuffer.Bind();
+#endif
     {
-        vec3 cam_down(cam_up.x, cam_up.y, -cam_up.z);
-        vec3 mirrored_cam_pos(cam_pos.x, cam_pos.y, /*-*/cam_pos.z);
-        mat4 mirrored_proj = scale(projection_matrix, vec3(-1.0f, 1.0f, 1.0f));
- 
-        /*Would be nice to do correctly once*/
-        double plane[4] = {0.0, 1.0f, 0.0, 0.0};
-        glEnable(GL_CLIP_PLANE0);
-        glClipPlane(GL_CLIP_PLANE0, plane);
-        mat4 mirrored_tB = scale(trackball_matrix, vec3(-1.0f, 1.0f, 1.0f));
- 
+        vec3 cam_down(cam_up.x, cam_up.y, cam_up.z);
+        vec3 mirrored_cam_pos(cam_pos.x, -cam_pos.y, cam_pos.z);
+        vec3 cam_look_down(cam_look.x, -cam_look.y, cam_look.z);
+        mat4 mirrored_proj = scale(projection_matrix, vec3(1.0f, -1.0f, 1.0f));
+        mat4 mirrored_view = lookAt(mirrored_cam_pos, cam_look_down, cam_down);
+#if MDEBUG
+        glViewport(0, 0, window_width, window_height);
+#endif
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        terrain.Draw(time, mirrored_tB * IDENTITY_MATRIX, view_matrix, mirrored_proj);
-        glDisable(GL_CLIP_PLANE0);
-        
+        terrain.Draw(time,  trackball_matrix * IDENTITY_MATRIX, mirrored_view, mirrored_proj, true);
         //sky.Draw(trackball_matrix, mirrored_view, mirrored_proj);
     }
+#if !MDEBUG
     mirrorBuffer.Unbind();
+#endif
 
     // render to window
+#if !MDEBUG
     glViewport(0, 0, window_width, window_height);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     terrain.Draw(time, trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
     //sky.Draw(trackball_matrix, view_matrix, projection_matrix);
     water.Draw(time, trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
-    
+#endif
     //update the lookAt position
     view_matrix = lookAt(cam_pos, cam_look, cam_up);
 }
