@@ -1,7 +1,6 @@
 #version 330
 
 // if 1 the shader uses Perlin Noise, otherwise uses Simplex Noise
-#define PERLIN_NOISE 1
 
 in vec2 uv;
 in vec3 vp;
@@ -14,6 +13,8 @@ uniform float tex_height;
 uniform float H;
 uniform float lacunarity;
 uniform float exponent_array[10];
+
+uniform bool PERLIN_NOISE;
 
 #if PERLIN_NOISE
 // Perlin Noise

@@ -45,6 +45,7 @@ vec3 cam_look;
 vec3 cam_up;
 float total;
 
+bool perlinNoise = true;
 
 float default_move_coeff = 0.01;
 float default_rotation_move_coeff = 0.01;
@@ -567,6 +568,15 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
                 return;
             }
             break;
+        case 'P':
+            // only act on release
+            if(action != GLFW_RELEASE) {
+                perlinNoise = !perlinNoise;
+                glUniform1i(glGetUniformLocation(program_id_, "PERLIN_NOISE"), perlinNoise);
+                return;
+            }
+            break;
+
         default:
             break;
     }
