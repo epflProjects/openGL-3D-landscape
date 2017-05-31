@@ -22,10 +22,27 @@ void main() {
     float window_width = window_dims.x;//tex_width; //+ 350;//window_dims.x;
     float window_height = window_dims.y;//tex_width; //+ 250;//window_dims.y;
 
-    //we need to adapt the view's mirrored coordinate to the ones of the water textures, to avoid distorsion in the .
-    float _u = gl_FragCoord.x / window_width;
+    // compute triangle normal using dFdx and dFdy
+    vec3 fragVertexEc = vpoint_mv.xyz;
+    vec3 x = dFdx(fragVertexEc);
+    vec3 y = dFdy(fragVertexEc);
+    vec3 triangle_normal = normalize(cross(x, y));
 
-    float _v = gl_FragCoord.y / window_height;
-    color = vec4(mix(hexToFloatColor(vec3(104.0f,128.0f,156.0f)), texture(tex_mirror, vec2(_u,_v)).rgb, vec3(.35)), 0.8f);
+    //compute diffuse term. (source : part of flat_shading hw3)
+    vec3 diffuse_light = vec3(0.0f,0.0f,0.0f);
+    vec3 Ld = vec3(1.0f, 1.0f, 1.0f);
+    vec3 l = normalize(light_dir);
+    float lambert = dot(triangle_normal, l);
+    if (lambert > 0.0f) {
+      diffuse_light += (lambert * Ld) * 0.5f;
+    }
+
+
+    //we need to adapt the view's mirrored coordinate to the ones of the water textures, to avoid distorsion in the .
+    float _u = gl_FragCoord.x / window_width + 0.01f*triangle_normal.x;
+
+    float _v = gl_FragCoord.y / window_height + 0.01f*triangle_normal.y;
+
+    color = vec4(0.35f * diffuse_light + mix(hexToFloatColor(vec3(104.0f,128.0f,156.0f)), texture(tex_mirror, vec2(_u,_v)).rgb, vec3(.35)), 0.8f);
     //color = vec4(texture(tex_mirror, vec2(_u,_v)).rgb, 0.8f);
 }

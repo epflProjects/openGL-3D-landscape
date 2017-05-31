@@ -188,7 +188,7 @@ void main() {
       diffuse_light += (lambert * Ld) * 0.5f;
     }
     //in mirror mode, to display only what is above the water.
-    if(isMirror && height < 0){
+    if(isMirror && height < -0.0001){
     	discard;
     }else{	
 	    color = vec4(0.5*diffuse_light + heightTexture(height).rgb, 1);	
