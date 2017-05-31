@@ -20,7 +20,7 @@
 #include <string.h>
 
 Grid terrain;
-Grid water;
+Water water;
 Trackball trackball;
 Snow snow;
 Sky sky;
@@ -168,8 +168,8 @@ void Init(GLFWwindow* window) {
     //added for floor reflection, not sure if need to be kept.
     glEnable(GL_MULTISAMPLE);
 
-    snow.Init();
     sky.Init();
+    snow.Init();
 
     // setup view and projection matrices
     cam_pos = vec3(0.0f, 1.0f, 2.0f);

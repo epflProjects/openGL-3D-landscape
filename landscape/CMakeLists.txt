@@ -22,7 +22,6 @@ file(GLOB SHADERS
     screenquad/*.glsl
     particles/*.glsl
     water/*.glsl)
->>>>>>> master
 deploy_shaders_to_build_dir(${SHADERS})
 
 add_executable(${EXERCISENAME} ${SOURCES} ${HEADERS} ${SHADERS})
