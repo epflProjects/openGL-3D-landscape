@@ -20,7 +20,9 @@ file(GLOB SHADERS
     quad/*.glsl
     sky/*.glsl
     screenquad/*.glsl
-    particles/*.glsl)
+    particles/*.glsl
+    water/*.glsl)
+>>>>>>> master
 deploy_shaders_to_build_dir(${SHADERS})
 
 add_executable(${EXERCISENAME} ${SOURCES} ${HEADERS} ${SHADERS})
