@@ -9,6 +9,7 @@
 #include "framebuffer.h"
 
 #include "grid/grid.h"
+#include "particles/snow.h"
 #include "quad/quad.h"
 #include "screenquad/screenquad.h"
 #include "trackball.h"
@@ -21,6 +22,7 @@
 Grid terrain;
 Water water;
 Trackball trackball;
+Snow snow;
 Sky sky;
 
 int window_width = 800;
@@ -68,7 +70,7 @@ vec3 pos[numberOfPts] = {vec3(-0.96145, 0.334909, 0.98078),
                          vec3(-0.660958, 0.110372, 0.658177),
                          vec3(-0.572374, 0.0633491, 0.573775),
                          vec3(0.109945, 0.158341, -0.162833),
-                         vec3(-0.0461158, 0.49035, -2.03308), //out 
+                         vec3(-0.0461158, 0.49035, -2.03308), //out
                          vec3(0.570173, 0.0930193, -0.492701),
                          vec3(0.696272, 0.340389, -0.151085),
                          vec3(0.873018, 0.423555, 0.982745)};
@@ -130,14 +132,14 @@ void displayErrEnum(){
         default:
             errEnum = "unknown error";
             break;
-    } 
+    }
     cout << errEnum;
 }
 
 void framebufferHMRender(){
     // render to framebuffer
     framebuffer.Bind();
-    {   
+    {
         glViewport(0,0,tex_width, tex_width);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         heightmap.Draw();
@@ -167,6 +169,7 @@ void Init(GLFWwindow* window) {
     glEnable(GL_MULTISAMPLE);
 
     sky.Init();
+    snow.Init();
 
     // setup view and projection matrices
     cam_pos = vec3(0.0f, 1.0f, 2.0f);
@@ -193,7 +196,7 @@ void Init(GLFWwindow* window) {
     framebufferHMRender();
 
     //enable transparency
-    glEnable (GL_BLEND); 
+    glEnable (GL_BLEND);
     glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
@@ -376,10 +379,11 @@ void Display() {
     glViewport(0, 0, window_width, window_height);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     terrain.Draw(time, trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
+    snow.Draw(cam_pos, projection_matrix, time);
     sky.Draw(trackball_matrix, view_matrix, projection_matrix);
     water.Draw(time, trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
     //update the lookAt position
-    
+
     if(bezier_mode) {
         bezier_frame_number += 0.0005 * bezier_speed;
         if(bezier_frame_number > 1.0f) {
@@ -634,6 +638,7 @@ int main(int argc, char *argv[]) {
     // cleanup
     terrain.Cleanup();
     framebuffer.Cleanup();
+    snow.Cleanup();
     sky.Cleanup();
     water.Cleanup();
 
