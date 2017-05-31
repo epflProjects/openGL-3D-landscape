@@ -96,7 +96,8 @@ public:
                  GL_STREAM_DRAW);
   }
 
-  void Draw(glm::mat4 viewProjectionMatrix, float deltaTime) {
+  void Draw(glm::vec3 cameraPos, glm::mat4 viewProjectionMatrix, float deltaTime) {
+    glm::vec3 CameraPosition = cameraPos;
     glm::mat4 ViewProjectionMatrix = viewProjectionMatrix;
 
     int newsnowflakes = (int)(deltaTime * 10000.0);
@@ -112,9 +113,6 @@ public:
 
       float spread = 1.5f;
       glm::vec3 maindir = glm::vec3(0.0f, 10.0f, 0.0f);
-
-      // bad way to create random direction. See:
-      // http://stackoverflow.com/questions/5408276/python-uniform-spherical-distribution
       glm::vec3 randomdir = glm::vec3((rand() % 2000 - 1000.0f) / 1000.0f,
                                       (rand() % 2000 - 1000.0f) / 1000.0f,
                                       (rand() % 2000 - 1000.0f) / 1000.0f);
@@ -141,7 +139,7 @@ public:
         if (s.life > 0.0f) {
           s.speed += glm::vec3(0.0f, -9.81f, 0.0f) * (float)deltaTime * 0.5f;
           s.pos += s.speed * (float)deltaTime;
-          s.cameradistance = glm::length(s.pos);
+          s.cameradistance = glm::length(s.pos - CameraPosition);
 
           g_snowflake_position_size_data[4 * SnowflakesCount + 0] = s.pos.x;
           g_snowflake_position_size_data[4 * SnowflakesCount + 1] = s.pos.y;
@@ -166,79 +164,65 @@ public:
 
     snowCount = SnowflakesCount;
 
-    // Mise à jour des tampons qu'OpenGL utilise pour le rendu.
-    // Il y a des façons bien plus sophistiquées pour envoyer des données du
-    // CPU au GPU, mais c'est en dehors du champ de ce tutoriel.
-    // http://www.opengl.org/wiki/Buffer_Object_Streaming
-
     glBindBuffer(GL_ARRAY_BUFFER, snowflakes_position_buffer);
     glBufferData(GL_ARRAY_BUFFER, MaxSnowFlakes * 4 * sizeof(GLfloat), NULL,
-                 GL_STREAM_DRAW); // Tampon orphelin, une méthode commune pour
-                                  // améliorer les performances de streaming.
-                                  // Voir le lien ci-dessus pour plus de
-                                  // détails.
+                 GL_STREAM_DRAW);
     glBufferSubData(GL_ARRAY_BUFFER, 0, SnowflakesCount * sizeof(GLfloat) * 4,
                     g_snowflake_position_size_data);
 
     glBindBuffer(GL_ARRAY_BUFFER, snowflakes_color_buffer);
     glBufferData(GL_ARRAY_BUFFER, MaxSnowFlakes * 4 * sizeof(GLubyte), NULL,
-                 GL_STREAM_DRAW); // Tampon orphelin, une méthode commune pour
-                                  // améliorer les performances de streaming.
-                                  // Voir le lien ci-dessus pour plus de
-                                  // détails.
+                 GL_STREAM_DRAW);
     glBufferSubData(GL_ARRAY_BUFFER, 0, SnowflakesCount * sizeof(GLubyte) * 4,
                     g_snowflake_color_data);
 
-    // Premier tampon d'attribut : sommets
     glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, billboard_vertex_buffer);
     glVertexAttribPointer(
-        0,        // attribut. Aucune raison précise pour 0, mais cela doit
-                  // correspondre à la disposition dans le shader.
-        3,        // taille
-        GL_FLOAT, // type
-        GL_FALSE, // normalisé ?
-        0,        // nombre d'octets séparant deux sommets dans le tampon
-        (void *)0 // décalage du tableau de tampon
+        0,
+        3,
+        GL_FLOAT,
+        GL_FALSE,
+        0,
+        (void *)0
         );
 
-    // Second tampon d'attribut : position et centre des particules
     glEnableVertexAttribArray(1);
     glBindBuffer(GL_ARRAY_BUFFER, snowflakes_position_buffer);
     glVertexAttribPointer(
-        1,        // attribut. Aucune raison précise pour 1, mais cela doit
-                  // correspondre à la disposition dans le shader.
-        4,        // taille : x + y + z + taille => 4
-        GL_FLOAT, // type
-        GL_FALSE, // normalisé ?
-        0,        // nombre d'octets séparant deux sommets dans le tampon
-        (void *)0 // décalage du tableau de tampon
+        1,
+        4,
+        GL_FLOAT,
+        GL_FALSE,
+        0,
+        (void *)0
         );
 
-    // 3e tampon d'attributs : couleurs des particules
     glEnableVertexAttribArray(2);
     glBindBuffer(GL_ARRAY_BUFFER, snowflakes_color_buffer);
     glVertexAttribPointer(
-        2, // attribut. Aucune raison précise pour 2, mais cela doit
-           // correspondre à la disposition dans le shader.
-        4, // taille : r + g + b + a => 4
-        GL_UNSIGNED_BYTE, // type
-        GL_TRUE,  // normalisé ? *** OUI, cela signifie que le unsigned char[4]
-                  // sera accessible avec un vec4 (float) dans le shader ***
-        0,        // nombre d'octets séparant deux sommets dans le tampon
-        (void *)0 // décalage du tableau de tampon
+        2,
+        4,
+        GL_UNSIGNED_BYTE,
+        GL_TRUE,
+        0,
+        (void *)0
         );
 
-    glVertexAttribDivisor(
-        0, 0); // particles vertices : always reuse the same 4 vertices -> 0
-    glVertexAttribDivisor(1, 1); // positions : one per quad (its center) -> 1
-    glVertexAttribDivisor(2, 1); // color : one per quad -> 1
+    glVertexAttribDivisor(0, 0);
+    glVertexAttribDivisor(1, 1);
+    glVertexAttribDivisor(2, 1);
 
     glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, SnowflakesCount);
 
     glDisableVertexAttribArray(0);
     glDisableVertexAttribArray(1);
     glDisableVertexAttribArray(2);
+    static const GLfloat g_vertex_buffer_data[] = {
+        -0.5f, -0.5f, 0.0f, 0.05f, -0.5f, 0.0f,
+        -0.5f, 0.5f,  0.0f, 0.5f,  0.5f,  0.0f,
+    };
+    glDrawElements(GL_POINTS, 20000, GL_UNSIGNED_INT, g_vertex_buffer_data);
   }
 
   void Cleanup() {

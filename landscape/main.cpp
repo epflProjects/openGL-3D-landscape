@@ -20,7 +20,7 @@
 
 Grid terrain;
 Grid water;
-Trackball trackball;
+Trackball trackball; 
 Snow snow;
 Sky sky;
 
@@ -359,7 +359,7 @@ void Display() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     const float time = glfwGetTime();
     terrain.Draw(time, trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
-    snow.Draw(projection_matrix, time);
+    snow.Draw(cam_pos, projection_matrix, time);
     sky.Draw(trackball_matrix, view_matrix, projection_matrix);
     water.Draw(time, trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
 
