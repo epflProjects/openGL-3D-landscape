@@ -62,7 +62,26 @@ float FPS_coeff = 2.5f;
 bool bezier_mode = false;
 float bezier_speed = 1.0f;
 float bezier_frame_number = 0.0f;
-vec2 points[5] = {vec2(1,1), vec2(0.25,0.75), vec2(0,0), vec2(0.75,0.25), vec2(1,1)};
+const int numberOfPts = 8;
+vec3 pos[numberOfPts] = {vec3(-0.96145, 0.334909, 0.98078),
+                         vec3(-0.660958, 0.110372, 0.658177),
+                         vec3(-0.572374, 0.0633491, 0.573775),
+                         vec3(0.109945, 0.158341, -0.162833),
+                         vec3(-0.0461158, 0.49035, -2.03308), //out 
+                         vec3(0.570173, 0.0930193, -0.492701),
+                         vec3(0.696272, 0.340389, -0.151085),
+                         vec3(0.873018, 0.423555, 0.982745)};
+
+vec3 look[numberOfPts] = {vec3(0.41161, -0.600675, -0.401152),
+                          vec3(0.755826, -0.255177, -0.642288),
+                          vec3(0.816481, 0.0232589, -0.749613),
+                          vec3(1.55104, 0.221676, -1.40737),
+                          vec3(1.90209, 0.0565342, -2.10169), //out
+                          vec3(1.0685, 0.16972, 1.39271),
+                          vec3(-0.629362, 0.365474, 1.14593),
+                          vec3(-0.157628, -0.810295, -0.529818)};
+
+
 
 //to store globally the height of the terrain.
 GLfloat heightmap_data[tex_width * tex_width];
@@ -299,22 +318,35 @@ void displayMove() {
     }
 }
 
-// number_of iterations --> curves : (points.size() - 1) / 2
-
-float getPt(float n1, float n2, float perc) {
-    float diff = n2 - n1;
-    return n1 + ( diff * perc );
+vec3* pos_points() {
+    vec3* pts = new vec3[numberOfPts];
+    for(int i=0; i<numberOfPts; ++i) {
+        pts[i] = pos[i];
+    }
+    return pts;
 }
 
-void setBezierPositionForFrame(float bezier_frame_number){
-    //set cam_look and cam_pos
-    float xa = getPt(points[0].x, points[1].x, bezier_frame_number);
-    float xb = getPt(points[1].x, points[2].x, bezier_frame_number);
-    cam_pos[0] = getPt(xa, xb, bezier_frame_number);
+vec3* look_points() {
+    vec3* pts = new vec3[numberOfPts];
+    for(int i=0; i<numberOfPts; ++i) {
+        pts[i] = look[i];
+    }
+    return pts;
+}
 
-    float ya = getPt(points[0].y, points[1].y, bezier_frame_number);
-    float yb = getPt(points[1].y, points[1].y, bezier_frame_number);
-    cam_pos[2] = getPt(ya , yb, bezier_frame_number);
+vec3 getBezierPositionForFrame(vec3* pts, int size, float bezier_frame_number){
+    if (size == 1) {
+        vec3 pt = pts[0];
+        delete [] pts;
+        return pt;
+    } else {
+        vec3* newPts = new vec3[size - 1];
+        for(int i = 0; i<size-1; ++i) {
+            newPts[i] = (1 - bezier_frame_number)*pts[i] + bezier_frame_number*pts[i+1];
+        }
+        delete [] pts;
+        return getBezierPositionForFrame(newPts, size - 1, bezier_frame_number);
+    }
 }
 
 // gets called for every frame.
@@ -328,13 +360,14 @@ void Display() {
     water.Draw(time, trackball_matrix * IDENTITY_MATRIX, view_matrix, projection_matrix);
     
     if(bezier_mode) {
-        bezier_frame_number += 0.01 * bezier_speed;
+        bezier_frame_number += 0.0005 * bezier_speed;
         if(bezier_frame_number > 1.0f) {
             bezier_mode = false;
         } else if (bezier_frame_number < 0.0f) {
             bezier_mode = false;
         } else {
-            setBezierPositionForFrame(bezier_frame_number);
+            cam_pos = getBezierPositionForFrame(pos_points(), numberOfPts, bezier_frame_number);
+            cam_look = getBezierPositionForFrame(look_points(), numberOfPts, bezier_frame_number);
         }
     } else {
         displayMove();
